@@ -1,5 +1,5 @@
 --- @class Object
-local Object = require("Abstracts.Object")
+local Object = require("Core.Abstracts.Object")
 
 --- @class Component:Object
 local Component = Object:Extend()

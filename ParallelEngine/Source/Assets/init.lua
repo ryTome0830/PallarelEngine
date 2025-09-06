@@ -1,0 +1,3 @@
+local Assets = {}
+
+return Assets

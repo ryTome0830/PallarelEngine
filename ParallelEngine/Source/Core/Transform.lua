@@ -1,9 +1,7 @@
 --- @class Component
-local Component = require("Abstracts.Component")
+local Component = require("Core.Abstracts.Component")
 --- @class Vector2
 local Vector2 = require("Core.Vector2")
---- @class GameObject
-local GameObject = require("Core.GameObject")
 
 --- @class Transform:Component
 local Transform = Component:Extend()
@@ -23,7 +21,7 @@ Transform.__name = "Transform"
 --- @param scale? Vector2
 --- @return Transform
 function Transform.New(gameObjectInstance, position, rotation, scale)
-    if not gameObjectInstance or not gameObjectInstance:Is(GameObject) then
+    if not gameObjectInstance then
         error("TransformはGameObjectからのみ生成できます Transform.New()を直接呼び出すことはできません")
     end
 

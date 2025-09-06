@@ -14,6 +14,10 @@ end
 --- @protected
 function Object:Init()
     self._enabled = true
+    self._awaked = false
+    self._started = false
+
+    self:OnInit()
 end
 
 --- @return Object

@@ -1,11 +1,11 @@
 --- @class Object
-local Object = require("Abstracts.Object")
+local Object = require("Core.Abstracts.Object")
 --- @class Transform
 local Transform = require("Core.Transform")
 --- @class Vector2
 local Vector2 = require("Core.Vector2")
 --- @class Component
-local Component = require("Abstracts.Component")
+local Component = require("Core.Abstracts.Component")
 
 --- コンポーネントの最大数
 --- @type integer
@@ -134,25 +134,99 @@ end
 
 
 -- = override method =
--- function GameObject:Awake() end
--- function GameObject:Start() end
--- function GameObject:Update(dt) end
--- function GameObject:Destroy() self:OnDestroy() end
--- function GameObject:IsEnabled() return self._enabled end
+
+function GameObject:Awake()
+    -- only false and false
+    if not self._enabled and not self._awaked then return end
+
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:Awake()
+        end
+    end
+
+    self._awaked = true
+end
+
+function GameObject:Start()
+    if not self._enabled and not self._started then return end
+
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:Start()
+        end
+    end
+
+    self._awaked = true
+    self._started = true
+end
+
+function GameObject:Update(dt)
+    if not self._enabled then return end
+
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:Update(dt)
+        end
+    end
+end
+
+function GameObject:Destroy()
+    -- destroy children
+
+    -- destroy component
+
+
+
+    self:OnDestroy()
+
+    self.transform:Destroy()
+    self.components = nil
+    self.transform = nil
+    self.super:Destroy()
+end
+
+function GameObject:IsEnabled()
+    return self._enabled
+end
+
+--- @param state boolean
+function GameObject:SetActive(state)
+    self._enabled = state
+end
 
 
 
 -- === callback ===
 -- = override method =
 
--- --- @private
--- function GameObject:OnInit() end
--- --- @private
--- function GameObject:OnEnable() end
--- --- @private
--- function GameObject:OnDisable() end
 --- @private
-function GameObject:OnDestroy() self._isDestroyed = true end
+function GameObject:OnInit()
+
+end
+
+--- @private
+function GameObject:OnEnable()
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:SetActive(true)
+        end
+    end
+end
+
+--- @private
+function GameObject:OnDisable()
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:SetActive(false)
+        end
+    end
+end
+
+--- @private
+function GameObject:OnDestroy()
+    self._isDestroyed = true
+end
 
 
 
@@ -165,7 +239,7 @@ function GameObject:__tostring()
         self.name,
         self._enabled,
         self.transform,
-        self.components
+        ExpandTable(self.components)
     )
 end
 

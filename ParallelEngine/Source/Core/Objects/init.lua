@@ -1,0 +1,3 @@
+local GameObjects = {}
+
+return GameObjects
