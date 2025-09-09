@@ -10,10 +10,6 @@ Transform.__name = "Transform"
 
 
 -- === construct method ===
--- = new method =
-
-
--- = override method =
 
 --- @param gameObjectInstance GameObject
 --- @param position? Vector2
@@ -60,8 +56,7 @@ function Transform:Init(gameObjectInstance, position, rotation, scale)
     self.children = {}
 end
 
--- function Transform:Extend() end
--- function Transform:Is(T) end
+
 
 -- === engine method === 
 -- = new method =
@@ -86,26 +81,32 @@ function Transform:SetParent(newParent)
 end
 
 
--- = override method =
 
--- function Transform:Awake() end
--- function Transform:Start() end
--- function Transform:Update(dt) end
--- function Transform:Destroy() self:OnDestroy() end
--- function Transform:IsEnabled() end
+--- = override method =
 
+function Transform:Destroy()
+    self.super:OnDestroy()
 
+    -- 親オブジェクトの参照を切る
+    local i, reference = FindInTable(self.parent.children, function (child)
+        return child == self
+    end)
+
+    if i then
+        table.remove(self.parent.children, i)
+        reference = nil
+    end
+
+    -- 参照を切る
+    self.gameObject = nil
+    self.position = nil
+    self.scale = nil
+    self.parent = nil
+    self.children = {}
+end
 
 -- === callback ===
--- = new method =
 
-
--- = override method =
-
--- function Transform:OnInit() end
--- function Transform:OnEnable() end
--- function Transform:OnDisable() end
--- function Transform:OnDestroy() end
 
 
 -- === metamethod ===

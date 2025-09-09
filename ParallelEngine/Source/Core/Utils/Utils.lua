@@ -40,3 +40,17 @@ function ExpandTable(tbl, indent)
     result = result .. indent_str .. "}"
     return result
 end
+
+--- tableから条件にあるオブジェクトを探す
+--- @generic T
+--- @param tbl T[]
+--- @param predicate fun(item: T): boolean
+--- @return number|nil, T|nil
+function FindInTable(tbl, predicate)
+    for i, element in ipairs(tbl) do
+        if predicate(element) then
+            return i, element
+        end
+    end
+    return nil, nil
+end

@@ -1,5 +1,5 @@
---- @class Object
-local Object = require("Core.Abstracts.Object")
+--- @class Orbit
+local Orbit = require("Core.Abstracts.Orbit")
 --- @class Transform
 local Transform = require("Core.Transform")
 --- @class Vector2
@@ -11,14 +11,13 @@ local Component = require("Core.Abstracts.Component")
 --- @type integer
 local MAX_COMPONENT_NUM = 6
 
---- @class GameObject:Component
-local GameObject = Object:Extend()
+--- @class GameObject:Orbit
+local GameObject = Orbit:Extend()
 GameObject.__index = GameObject
 GameObject.__name = "GameObject"
 
 
 -- === construct method ===
--- = override method =
 
 --- @param name string
 --- @param position? Vector2
@@ -62,6 +61,25 @@ function GameObject:Init(name, position, rotation, scale)
     self.components = {}
 end
 
+--- @return GameObject
+function GameObject:Clone()
+    local go = GameObject.New(
+        self.name .. "(clone)",
+        self.transform.position:Clone(),
+        self.transform.rotation,
+        self.transform.scale:Clone()
+    )
+
+    for _, component in ipairs(self.components) do
+        local co = component:Clone()
+        if co then
+            go:AddComponent(co)
+        end
+    end
+
+    return go
+end
+
 
 -- = new method =
 
@@ -82,6 +100,8 @@ function GameObject:GenerateUUID()
 
     return uuid
 end
+
+
 
 -- === engine method === 
 -- = new method =
@@ -109,7 +129,6 @@ function GameObject:AddComponent(componentClass, ...)
     end
 
     newComponent.gameObject = self
-    newComponent.transform = self.transform
 
     table.insert(self.components, newComponent)
 
@@ -172,38 +191,28 @@ function GameObject:Update(dt)
 end
 
 function GameObject:Destroy()
-    -- destroy children
+    -- 子を破壊
+    for _, child in ipairs(self.transform.children) do
+        child:Destroy()
+    end
 
-    -- destroy component
+    -- コンポーネントを破壊
+    for _, component in ipairs(self.components) do
+        component:Destroy()
+    end
 
-
-
-    self:OnDestroy()
-
+    -- 参照を切る
     self.transform:Destroy()
-    self.components = nil
     self.transform = nil
+    self.components = nil
+    self.name = nil
+    self.uuid = nil
     self.super:Destroy()
 end
-
-function GameObject:IsEnabled()
-    return self._enabled
-end
-
---- @param state boolean
-function GameObject:SetActive(state)
-    self._enabled = state
-end
-
 
 
 -- === callback ===
 -- = override method =
-
---- @private
-function GameObject:OnInit()
-
-end
 
 --- @private
 function GameObject:OnEnable()
@@ -223,11 +232,6 @@ function GameObject:OnDisable()
     end
 end
 
---- @private
-function GameObject:OnDestroy()
-    self._isDestroyed = true
-end
-
 
 
 -- === metamethod ===
@@ -235,12 +239,15 @@ end
 --- @private
 function GameObject:__tostring()
     return string.format(
-        "GameObject(name: %s, enabled: %s, transform: %s, components: %s)",
+        "GameObject(name: %s, uuid: %s, enabled: %s, transform: %s, components: %s)",
         self.name,
+        self.uuid,
         self._enabled,
         self.transform,
         ExpandTable(self.components)
     )
 end
+
+
 
 return GameObject
