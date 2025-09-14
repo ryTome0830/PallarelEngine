@@ -6,20 +6,38 @@ local Component = Orbit:Extend()
 Component.__index = Component
 Component.__name = "Component"
 
+Component.Serializable = {"_enabled"}
 
 -- === construct method ===
 
---- @param ... table
-function Component.New(...)
+--- @param properties table
+function Component.New(properties)
 end
 
+--- @param properties table
 --- @protected
-function Component:Init()
+function Component:Init(properties)
     self.super:Init()
 end
 
---- @return Component|nil
+--- @return table
 function Component:Clone()
+    return self:Dump()
+end
+
+--- @return table
+function Component:Dump()
+    local properties = {}
+    local propertyList = getmetatable(self).Serializable
+
+    if propertyList then
+        for _, key in ipairs(propertyList) do
+            if self[key] ~= nil then
+                properties[key] = self[key]
+            end
+        end
+    end
+    return properties
 end
 
 -- === engine method === 

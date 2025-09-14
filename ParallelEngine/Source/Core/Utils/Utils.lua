@@ -26,10 +26,10 @@ end
 function ExpandTable(tbl, indent)
     indent = indent or 1
     local result = "{\n"
-    local indent_str = string.rep("  ", indent)
+    local indentStr = string.rep("  ", indent)
 
     for key, value in pairs(tbl) do
-        result = result .. indent_str .. "  [" .. tostring(key) .. "] = "
+        result = result .. indentStr .. "  [" .. tostring(key) .. "] = "
 
         if type(value) == "table" and value ~= tbl then
             result = result .. ExpandTable(value, indent+1)
@@ -37,7 +37,7 @@ function ExpandTable(tbl, indent)
             result = result .. tostring(value) .. ",\n"
         end
     end
-    result = result .. indent_str .. "}"
+    result = result .. indentStr .. "}"
     return result
 end
 
@@ -53,4 +53,75 @@ function FindInTable(tbl, predicate)
         end
     end
     return nil, nil
+end
+
+--- @param t table
+--- @param indentLevel? number (default=0)
+--- @return string
+function ToStringTable(t, indentLevel)
+    indentLevel = indentLevel or 0
+    local indent = string.rep("    ", indentLevel)
+    local nextIndent = string.rep("    ", indentLevel + 1)
+    local parts = {}
+    local isArray = true
+
+    -- キーが1から始まる整数かチェック
+    for k, _ in pairs(t) do
+        if type(k) ~= "number" or k ~= math.floor(k) or k < 1 then
+            isArray = false
+            break
+        end
+    end
+
+    for k, v in (isArray and ipairs or pairs)(t) do
+        local keyStr
+        if not isArray then
+            keyStr = type(k) == "string" and k or tostring(k)
+        else
+            keyStr = nil -- 配列形式ではキーは省略
+        end
+
+        local valStr
+        if type(v) == "table" then
+            valStr = ToStringTable(v, indentLevel + 1)
+        elseif type(v) == "string" then
+            valStr = '"' .. v .. '"'
+        else
+            valStr = tostring(v)
+        end
+
+        local line = nextIndent
+        if keyStr then
+            line = line .. keyStr .. " = " .. valStr
+        else
+            line = line .. valStr
+        end
+        table.insert(parts, line)
+    end
+
+    return "{\n" .. table.concat(parts, ",\n") .. "\n" .. indent .. "}"
+end
+
+--- @param dir string
+--- @param fileName string
+--- @return file*|nil
+function CheckExistanceFile(dir, fileName)
+    local attempts = 0
+    local basePath = dir .. "/" .. fileName 
+    local filePath = basePath .. ".lua"
+
+    while attempts < 3 do
+        local f = io.open(filePath, "r")
+        if not f then
+            return io.open(filePath, "w")
+        else
+            f:close()
+            attempts = attempts + 1
+            -- string.formatにベースパス全体を渡す
+            filePath = string.format("%s_%d.lua", basePath, attempts)
+        end
+    end
+
+    print("Failed to create file after 3 attempts.")
+    return nil
 end

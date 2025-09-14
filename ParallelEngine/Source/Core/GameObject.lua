@@ -71,9 +71,10 @@ function GameObject:Clone()
     )
 
     for _, component in ipairs(self.components) do
-        local co = component:Clone()
-        if co then
-            go:AddComponent(co)
+        local properties = component:Clone()
+        local componentClass = component.__index
+        if componentClass then
+            go:AddComponent(componentClass, properties)
         end
     end
 
@@ -174,9 +175,9 @@ end
 
 --- コンポーネントをGameObjectに追加する
 --- @param componentClass Component
---- @param ... table ComponentClassのNewに渡す引数
+--- @param properties table ComponentClassのNewに渡す引数
 --- @return Component|nil
-function GameObject:AddComponent(componentClass, ...)
+function GameObject:AddComponent(componentClass, properties)
     if #self.components >= MAX_COMPONENT_NUM then
         error("GameObjectに設定できるComponentは最大 "..MAX_COMPONENT_NUM.." に制限されています")
         return nil
@@ -188,7 +189,7 @@ function GameObject:AddComponent(componentClass, ...)
     end
 
     --- @class Component
-    local newComponent = componentClass.New(...)
+    local newComponent = componentClass.New(properties)
     if not newComponent:Is(Component) then
         error("GameObjectに追加できるのはComponentを継承したクラスのみです")
         return nil
@@ -210,7 +211,7 @@ end
 --- @return Component|nil
 function GameObject:GetComponent(componentClass)
     for _, component in pairs(self.components) do
-        if componentClass:Is(Component) then
+        if TypeOf(component, componentClass) then
             return component
         end
     end
@@ -247,7 +248,7 @@ function GameObject:Start()
 end
 
 function GameObject:Update(dt)
-    if not self._enabled then return end
+    if not self._enabled or self._isDestroyed then return end
 
     for _, component in ipairs(self.components) do
         if component:IsEnabled() then
