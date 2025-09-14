@@ -57,6 +57,17 @@ function Transform:Init(gameObjectInstance, position, rotation, scale)
 end
 
 
+-- = override =
+
+--- @return TransformDefinition
+function Transform:Dump()
+    return {
+        position = {x = self.position.x, y = self.position.y},
+        rotation = self.rotation,
+        scale = {x = self.scale.x, y = self.scale.y}
+    }
+end
+
 
 -- === engine method === 
 -- = new method =

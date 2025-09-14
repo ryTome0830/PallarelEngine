@@ -46,7 +46,10 @@ function Object:Is(T)
     return false
 end
 
-
+--- @return table
+function Object:Dump()
+    return {}
+end
 
 -- === metamethod ===
 

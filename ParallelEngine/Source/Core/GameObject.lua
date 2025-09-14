@@ -102,6 +102,72 @@ function GameObject:GenerateUUID()
 end
 
 
+-- = override =
+
+--- @param isStrict? boolean
+--- @return GameObjectDefinition|nil
+function GameObject:Dump(isStrict)
+    isStrict = isStrict or false
+
+    --- @type GameObjectDefinition
+    local goData = {}
+
+    if self.name and self.name ~= "" then
+        goData.name = string.format("%s", self.name)
+    else
+        if isStrict then
+            print("Error: GameObejct.name is missing")
+            return nil
+        end
+        goData.name = "AnonymousGameObject_broken"
+    end
+
+    --- @type GameObjectPropertiesDefinition
+    local properties = {}
+    if TypeOf(self.transform, Transform)then
+        properties.transform = self.transform:Dump()
+    else
+        if isStrict then
+            print("Error: GameObject.transform is missing.")
+            return nil
+        end
+        properties.transform = {position={x=0, y=0}, rotation=0, scale={x=1, y=1}}
+    end
+    if self._enabled ~= nil then
+        properties.enabled = self._enabled
+    else
+        if isStrict then
+            print("Error: GameObject._enabled state is missing.")
+            return nil
+        end
+        properties.enabled = true
+    end
+
+    goData.properties = properties
+
+    --- @type ComponentDefinition
+    local componentsData = {}
+    if self.components then
+        for _, component in ipairs(self.components) do
+            local componentType = component.__name
+            local properties = component:Dump()
+
+            if componentType then
+                table.insert(componentsData, {
+                    componentType = componentType,
+                    properties = properties
+                })
+            end
+        end
+    end
+
+    if next(componentsData) ~= nil then
+        goData.components = componentsData
+    end
+
+    return goData
+end
+
 
 -- === engine method === 
 -- = new method =
