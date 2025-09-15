@@ -16,14 +16,19 @@ function PlayerController.New(props)
 end
 
 function PlayerController:Init(props)
+    self.super:Init()
     self._enabled = props.enabled or true
     self.speed = props.speed or 5.0
     self.jumpHeight = props.jumpHeight or 10.0
     self.internalState = "running"
+
+    self.ySpeedScale = math.random(-10, 10)
+    self.xSpeedScale = math.random(-10, 10)
 end
 
 function PlayerController:Update(dt)
-    print(string.format("frameTime: %f", dt))
+    self.gameObject.transform.position.x = self.gameObject.transform.position.x + self.speed * self.xSpeedScale * dt
+    self.gameObject.transform.position.y = self.gameObject.transform.position.y + self.speed * self.ySpeedScale * dt
 end
 
 function PlayerController:__tostring()

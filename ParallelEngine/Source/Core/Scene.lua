@@ -31,7 +31,8 @@ function Scene:Init(name)
     self.super:Init()
 
     self.name = name
-    self._isDestroyed = false
+    self._awaked = false
+    self._started = false
 
     --- @type GameObject[]
     self.gameObjects = {}
@@ -61,35 +62,56 @@ function Scene:AddGameObject(gameObject)
     table.insert(self.gameObjects, gameObject)
 end
 
-function Scene:SceneAwake()
+function Scene:Awake()
+    if self._awaked then
+        error("Scene: " .. self.name .. " is already awaked.")
+        return
+    end
+
     for _, go in ipairs(self.gameObjects) do
         go:Awake()
     end
     self:OnAwake()
+    self._awaked = true
 end
 
-function Scene:SceneStart()
+function Scene:Start()
+    if not self._awaked then
+        error("Scene: " .. self.name .. " is not awaked yet.")
+        return
+    end
+    if self._started then
+        error("Scene: " .. self.name .. " is already started.")
+        return
+    end
+
     for _, go in ipairs(self.gameObjects) do
         go:Start()
     end
     self:OnStart()
+    self._started = true
 end
 
 --- @param dt number
-function Scene:SceneUpdate(dt)
+function Scene:Update(dt)
+    if not self._awaked or not self._started then
+        error("Scene: " .. self.name .. " cannot be executed unless Awake and Start are executed.")
+        return
+    end
+
     for _, go in ipairs(self.gameObjects) do
         go:Update(dt)
     end
 end
 
-function Scene:SceneDraw()
+function Scene:Draw()
     for _, go in ipairs(self.gameObjects) do
         go:Draw()
     end
     self:OnDraw()
 end
 
-function Scene:SceneDestroy()
+function Scene:Destroy()
     for _, go in ipairs(self.gameObjects) do
         go:Destroy()
     end

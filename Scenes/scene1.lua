@@ -10,16 +10,6 @@ return {
                     scale = {x = 1, y = 1}
                 }
             },
-            -- components = {
-            --     {
-            --         componentType = "RigidBody",
-            --         properties = {0, 0, "static"}
-            --     },
-            --     {
-            --         components = "SpriteRenderer",
-            --         properties = {0, 0, "/Assets/Img/test.png"}
-            --     }
-            -- }
         }
     }
 }

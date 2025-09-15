@@ -174,9 +174,10 @@ end
 -- = new method =
 
 --- コンポーネントをGameObjectに追加する
---- @param componentClass Component
+--- @generic T:Component
+--- @param componentClass T
 --- @param properties table ComponentClassのNewに渡す引数
---- @return Component|nil
+--- @return T|nil
 function GameObject:AddComponent(componentClass, properties)
     if #self.components >= MAX_COMPONENT_NUM then
         error("GameObjectに設定できるComponentは最大 "..MAX_COMPONENT_NUM.." に制限されています")
@@ -195,6 +196,11 @@ function GameObject:AddComponent(componentClass, properties)
         return nil
     end
 
+    if FindInTable(self.components, function(c) return TypeOf(c, componentClass) end) then
+        error("GameObjectに同じ種類のComponentを複数追加することはできません")
+        return nil
+    end
+
     newComponent.gameObject = self
 
     table.insert(self.components, newComponent)
@@ -207,8 +213,9 @@ function GameObject:AddComponent(componentClass, properties)
 end
 
 --- アタッチされた任意のコンポーネントを取得する
---- @param componentClass Component
---- @return Component|nil
+--- @generic T:Component
+--- @param componentClass T
+--- @return T|nil
 function GameObject:GetComponent(componentClass)
     for _, component in pairs(self.components) do
         if TypeOf(component, componentClass) then
@@ -253,6 +260,16 @@ function GameObject:Update(dt)
     for _, component in ipairs(self.components) do
         if component:IsEnabled() then
             component:Update(dt)
+        end
+    end
+end
+
+function GameObject:Draw()
+    if not self._enabled or self._isDestroyed then return end
+
+    for _, component in ipairs(self.components) do
+        if component:IsEnabled() then
+            component:Draw()
         end
     end
 end

@@ -1,4 +1,10 @@
 .vscode/
 .luarc.json
+
+/Game/Img
+
 conf.lua
 main.lua
+*_1.lua
+*_2.lua
+*_3.lua

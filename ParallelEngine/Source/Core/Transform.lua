@@ -99,13 +99,14 @@ function Transform:Destroy()
     self.super:OnDestroy()
 
     -- 親オブジェクトの参照を切る
-    local i, reference = FindInTable(self.parent.children, function (child)
-        return child == self
-    end)
-
-    if i then
-        table.remove(self.parent.children, i)
-        reference = nil
+    if self.parent then
+        local i, reference = FindInTable(self.parent.children, function (child)
+            return child == self
+        end)
+        if i then
+            table.remove(self.parent.children, i)
+            reference = nil
+        end
     end
 
     -- 参照を切る

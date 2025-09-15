@@ -38,6 +38,25 @@ end
 function SceneManager:LoadScene(sceneTable)
     self.currentScene = Scene.New(sceneTable.name)
     self:ParseSecne(sceneTable)
+
+    if self.currentScene then
+        self.currentScene:Awake()
+        self.currentScene:Start()
+    end
+end
+
+function SceneManager:UnLoadScene()
+    self.currentScene:Destroy()
+    self.currentScene = nil
+end
+
+--- @param dt number
+function SceneManager:UpdateScene(dt)
+    self.currentScene:Update(dt)
+end
+
+function SceneManager:DrawScene()
+    self.currentScene:Draw()
 end
 
 --- @param sceneTable SceneDefinition
@@ -77,7 +96,6 @@ function SceneManager:DumpScene(dirPath)
     }
 
     for _, go in ipairs(self.currentScene.gameObjects) do
-        -- go:Dump() は GameObjectのシリアライズメソッドを想定
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
     end
