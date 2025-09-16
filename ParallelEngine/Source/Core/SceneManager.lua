@@ -36,7 +36,13 @@ end
 
 --- @param sceneTable SceneDefinition
 function SceneManager:LoadScene(sceneTable)
-    self.currentScene = Scene.New(sceneTable.name)
+    local randomSeed
+    if sceneTable.saveRandomeSeed then
+        randomSeed = sceneTable.randomSeed
+    else
+        randomSeed = os.time() % 10000
+    end
+    self.currentScene = Scene.New(sceneTable.name, randomSeed, sceneTable.saveRandomeSeed)
     self:ParseSecne(sceneTable)
 
     if self.currentScene then
@@ -82,7 +88,8 @@ function SceneManager:ParseSecne(sceneTable)
 end
 
 --- @param dirPath string
-function SceneManager:DumpScene(dirPath)
+--- @param prioritiseGameObjects? table<string>
+function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
     if not self.currentScene then return end
     if not TypeOf(self.currentScene.name, "string") then return end
 
@@ -92,16 +99,42 @@ function SceneManager:DumpScene(dirPath)
 
     local sceneData = {
         name = self.currentScene.name,
+        randomSeed = self.currentScene.randomSeed,
+        saveRandomeSeed = self.currentScene.saveRandomeSeed,
         gameObjects = {}
     }
 
+    local sortedGameObjects = {}
+    local others = {}
+
+    local priorityMap = {}
+    if prioritiseGameObjects then
+        for i, name in ipairs(prioritiseGameObjects) do
+            priorityMap[name] = i
+        end
+    end
+    print(ToStringTable(priorityMap))
+
     for _, go in ipairs(self.currentScene.gameObjects) do
+        if go.name == "GameManager" then
+            table.insert(sortedGameObjects, go)
+        elseif priorityMap[go.name] then
+            table.insert(sortedGameObjects, 1 + priorityMap[go.name], go)
+        else
+            table.insert(others, go)
+        end
+    end
+
+    for _, go in ipairs(others) do
+        table.insert(sortedGameObjects, go)
+    end
+
+    for _, go in ipairs(sortedGameObjects) do
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
     end
 
     local sceneContext = "return " .. ToStringTable(sceneData)
-
     f:write(sceneContext)
     f:close()
 end

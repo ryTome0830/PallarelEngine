@@ -55,6 +55,7 @@ function FindInTable(tbl, predicate)
     return nil, nil
 end
 
+--- tableの要素を文字列に変換する
 --- @param t table
 --- @param indentLevel? number (default=0)
 --- @return string
@@ -102,6 +103,7 @@ function ToStringTable(t, indentLevel)
     return "{\n" .. table.concat(parts, ",\n") .. "\n" .. indent .. "}"
 end
 
+--- ファイルの存在をチェックし、存在しない場合は新規作成する
 --- @param dir string
 --- @param fileName string
 --- @return file*|nil
@@ -121,7 +123,5 @@ function CheckExistanceFile(dir, fileName)
             filePath = string.format("%s_%d.lua", basePath, attempts)
         end
     end
-
-    print("Failed to create file after 3 attempts.")
     return nil
 end

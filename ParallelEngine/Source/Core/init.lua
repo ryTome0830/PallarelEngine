@@ -5,6 +5,7 @@ Core.Component = require("Core.Components")
 Core.GameObjects = require("Core.GameObjects")
 
 Core.GameObject = require("Core.GameObject")
+Core.LogManager = require("Core.LogManager")
 Core.Scene = require("Core.Scene")
 Core.SceneManager = require("Core.SceneManager")
 Core.Transform = require("Core.Transform")

@@ -1,3 +1,7 @@
+--- @class LogManager
+local LogManager = require ("Core.LogManager")
+
+
 --- @class Vector2
 local Vector2 = {}
 Vector2.__index = Vector2
@@ -57,7 +61,7 @@ function Vector2.Right() return Vector2.New(1, 0) end
 --- @return Vector2
 function Vector2:Scale(scalar)
     if not TypeOf(scalar, "number") then
-        error("[Vector2:Scale()] 引数の型が異なります")
+        LogManager.LogError("Vector2:Scale()の引数はnumber型である必要があります")
     end
     return Vector2.New(self.x * scalar, self.y * scalar)
 end
@@ -67,7 +71,7 @@ end
 --- @return number
 function Vector2:Dot(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2:Dot()] 引数の型が異なります")
+        LogManager.LogError("Vector2:Dot()の引数はVector2型である必要があります")
     end
     return self.x * v2.x + self.y * v2.y
 end
@@ -77,7 +81,7 @@ end
 --- @return number
 function Vector2:Cross(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2:Cross()] 引数の型が異なります")
+        LogManager.LogError("Vector2:Cross()の引数はVector2型である必要があります")
     end
     return self.x * v2.y - self.y * v2.x
 end
@@ -93,7 +97,7 @@ end
 --- @return number
 function Vector2:Distance(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2:Distance()] 引数の型が異なります")
+        LogManager.LogError("Vector2:Distance()の引数はVector2型である必要があります")
     end
     return Vector2.New(self.x - v2.x, self.y - v2.y):Length()
 end
@@ -118,7 +122,7 @@ function Vector2:Normalized()
     if len > 0 then
         return Vector2.New(self.x / len, self.y / len)
     else
-        error("[Vector2:Normalized()] 0ベクトルは正規化できません")
+        LogManager.LogError("[Vector2:Normalized()] 0ベクトルは正規化できません")
         return self
     end
 end
@@ -138,7 +142,7 @@ end
 --- @return Vector2
 function Vector2:__add(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2:__add()] 引数の型が異なります")
+        LogManager.LogError("[Vector2:__add()] 引数の型が異なります")
     end
     return Vector2.New(self.x + v2.x, self.y + v2.y)
 end
@@ -148,7 +152,7 @@ end
 --- @return Vector2
 function Vector2:__sub(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2:__sub] 引数の型が異なります")
+        LogManager.LogError("[Vector2:__sub()] 引数の型が異なります")
     end
     return Vector2.New(self.x - v2.x, self.y - v2.y)
 end
@@ -158,7 +162,7 @@ end
 --- @return boolean
 function Vector2:__eq(v2)
     if not TypeOf(v2, Vector2) then
-        error("[Vector2]: 等価判定の引数が無効です")
+        LogManager.LogError("[Vector2]: 等価判定の引数が無効です")
     end
     return self.x == v2.x and self.y == v2.y
 end

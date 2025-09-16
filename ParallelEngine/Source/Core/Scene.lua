@@ -2,6 +2,8 @@
 local Object = require("Core.Abstracts.Object")
 --- @class GameObject
 local GameObject = require("Core.GameObject")
+--- @class LogManager
+local LogManager = require("Core.LogManager")
 
 --- シーン中のオブジェクトの最大数
 --- @type integer
@@ -16,29 +18,34 @@ Scene.__name = "Scene"
 -- === construct method ===
 
 --- @param name string
+--- @param randomSeed number
+--- @param saveRandomeSeed boolean
 --- @return Scene
-function Scene.New(name)
+function Scene.New(name, randomSeed, saveRandomeSeed)
     --- @class Scene
     local instance = setmetatable({}, Scene)
-    instance:Init(name)
+    instance:Init(name, randomSeed, saveRandomeSeed)
 
     return instance
 end
 
 --- @protected
 --- @param name string
-function Scene:Init(name)
+--- @param randomSeed number
+--- @param saveRandomeSeed boolean
+function Scene:Init(name, randomSeed, saveRandomeSeed)
     self.super:Init()
 
     self.name = name
     self._awaked = false
     self._started = false
 
+    self.saveRandomeSeed = saveRandomeSeed or false
+    self.randomSeed = randomSeed
+
     --- @type GameObject[]
     self.gameObjects = {}
 end
-
-
 
 -- === engine method === 
 
@@ -55,16 +62,17 @@ end
 --- @param gameObject GameObject
 function Scene:AddGameObject(gameObject)
     if #self.gameObjects >= MAX_GAMEOBJECT_NUM then
-        error("1シーンに存在できるGameObjectは " .. MAX_GAMEOBJECT_NUM .. " に制限されています")
+        LogManager.LogError("1シーンに存在できるGameObjectは " .. MAX_GAMEOBJECT_NUM .. " に制限されています")
         return
     end
 
     table.insert(self.gameObjects, gameObject)
+    LogManager.Log("GameObjects: " .. #self.gameObjects .." " .. self.gameObjects[#self.gameObjects].name)
 end
 
 function Scene:Awake()
     if self._awaked then
-        error("Scene: " .. self.name .. " is already awaked.")
+        LogManager.LogError("Scene: " .. self.name .. " is already awaked.")
         return
     end
 
@@ -77,11 +85,11 @@ end
 
 function Scene:Start()
     if not self._awaked then
-        error("Scene: " .. self.name .. " is not awaked yet.")
+        LogManager.LogError("Scene: " .. self.name .. " is not awaked yet.")
         return
     end
     if self._started then
-        error("Scene: " .. self.name .. " is already started.")
+        LogManager.LogError("Scene: " .. self.name .. " is already started.")
         return
     end
 
@@ -95,7 +103,7 @@ end
 --- @param dt number
 function Scene:Update(dt)
     if not self._awaked or not self._started then
-        error("Scene: " .. self.name .. " cannot be executed unless Awake and Start are executed.")
+        LogManager.LogError("Scene: " .. self.name .. " cannot be executed unless Awake and Start are executed.")
         return
     end
 

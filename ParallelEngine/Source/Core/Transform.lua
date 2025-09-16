@@ -2,6 +2,8 @@
 local Component = require("Core.Abstracts.Component")
 --- @class Vector2
 local Vector2 = require("Core.Vector2")
+--- @class LogManager
+local LogManager = require("Core.LogManager")
 
 --- @class Transform:Component
 local Transform = Component:Extend()
@@ -18,11 +20,11 @@ Transform.__name = "Transform"
 --- @return Transform
 function Transform.New(gameObjectInstance, position, rotation, scale)
     if not gameObjectInstance then
-        error("TransformはGameObjectからのみ生成できます Transform.New()を直接呼び出すことはできません")
+        LogManager.LogError("TransformはGameObjectからのみ生成できます Transform.New()を直接呼び出すことはできません")
     end
 
     if gameObjectInstance.transform then
-        error("GameObjectには既にTransformがアタッチされています Transformを複数追加することはできません")
+        LogManager.LogError("GameObjectには既にTransformがアタッチされています Transformを複数追加することはできません")
     end
 
     --- @class Transform
@@ -133,15 +135,15 @@ end
 --- @private
 function Transform:__newindex(key, value)
     if key == "_enabled" then
-        error("Transformの'_enabled'プロパティは機能しません")
+        LogManager.LogWarning("Transformの'_enabled'プロパティは機能しません")
         return
     elseif key == "scale" then
         if not TypeOf(value, Vector2) then
-            error("型が一致しません")
+            LogManager.LogError("Transform.scaleにはVector2型の値を設定してください")
             return
         end
         if value.x == 0 or value.y == 0 then
-            print("Transformのscaleに0が設定されようとしたため(0.1, 0.1)に自動補正しました")
+            LogManager.LogWarning("Transformのscaleに0が設定されようとしたため(0.1, 0.1)に自動補正しました")
             rawset(self, key, Vector2.New(0.1, 0.1))
             return
         end

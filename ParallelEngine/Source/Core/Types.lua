@@ -1,6 +1,8 @@
 --- 1つのシーンを定義するデータテーブルの型。
 --- @class SceneDefinition
 --- @field name string
+--- @field randomSeed number
+--- @field saveRandomeSeed boolean
 --- @field gameObjects GameObjectDefinition[]
 local SceneDefinition = {}
 

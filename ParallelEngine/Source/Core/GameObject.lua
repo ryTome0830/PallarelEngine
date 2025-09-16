@@ -7,6 +7,9 @@ local Vector2 = require("Core.Vector2")
 --- @class Component
 local Component = require("Core.Abstracts.Component")
 
+--- @class LogManager
+local LogManager = require("Core.LogManager")
+
 --- コンポーネントの最大数
 --- @type integer
 local MAX_COMPONENT_NUM = 6
@@ -50,6 +53,7 @@ function GameObject:Init(name, position, rotation, scale)
     self.uuid = self:GenerateUUID()
 
     --- @type Transform
+    --- @
     self.transform = Transform.New(
         self,
         position or Vector2.Zero(),
@@ -117,7 +121,7 @@ function GameObject:Dump(isStrict)
         goData.name = string.format("%s", self.name)
     else
         if isStrict then
-            print("Error: GameObejct.name is missing")
+            LogManager.LogError("Error: GameObejct.name is missing")
             return nil
         end
         goData.name = "AnonymousGameObject_broken"
@@ -129,7 +133,7 @@ function GameObject:Dump(isStrict)
         properties.transform = self.transform:Dump()
     else
         if isStrict then
-            print("Error: GameObject.transform is missing.")
+            LogManager.LogError("Error: GameObject.transform is missing.")
             return nil
         end
         properties.transform = {position={x=0, y=0}, rotation=0, scale={x=1, y=1}}
@@ -138,7 +142,7 @@ function GameObject:Dump(isStrict)
         properties.enabled = self._enabled
     else
         if isStrict then
-            print("Error: GameObject._enabled state is missing.")
+            LogManager.LogError("Error: GameObject._enabled state is missing.")
             return nil
         end
         properties.enabled = true
@@ -180,24 +184,24 @@ end
 --- @return T|nil
 function GameObject:AddComponent(componentClass, properties)
     if #self.components >= MAX_COMPONENT_NUM then
-        error("GameObjectに設定できるComponentは最大 "..MAX_COMPONENT_NUM.." に制限されています")
+        LogManager.LogError("GameObjectに設定できるComponentは最大 "..MAX_COMPONENT_NUM.." に制限されています")
         return nil
     end
 
     if TypeOf(componentClass, Transform) then
-        error("GameObjectにTransformを複数追加することはできません")
+        LogManager.LogError("GameObjectにTransformを複数追加することはできません")
         return nil
     end
 
     --- @class Component
     local newComponent = componentClass.New(properties)
     if not newComponent:Is(Component) then
-        error("GameObjectに追加できるのはComponentを継承したクラスのみです")
+        LogManager.LogError("GameObjectに追加できるのはComponentを継承したクラスのみです")
         return nil
     end
 
     if FindInTable(self.components, function(c) return TypeOf(c, componentClass) end) then
-        error("GameObjectに同じ種類のComponentを複数追加することはできません")
+        LogManager.LogError("GameObjectに同じ種類のComponentを複数追加することはできません")
         return nil
     end
 

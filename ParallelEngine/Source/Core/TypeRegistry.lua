@@ -1,3 +1,6 @@
+--- @class LogManager
+local LogManager = require("Core.LogManager")
+
 --- @class TypeRegistry
 local TypeRegistry = {}
 TypeRegistry.__index = TypeRegistry
@@ -15,7 +18,7 @@ local gameNamespace = nil
 function TypeRegistry.Init(engineT, gameT)
     engineNamespace = engineT
     gameNamespace = gameT
-    print("TypeRegistry initialized.")
+    LogManager.Log("TypeRegistry initialized.")
 end
 
 --- 文字列名からクラス本体を取得します
@@ -23,7 +26,7 @@ end
 --- @return Component|nil
 function TypeRegistry.Get(className)
     if not engineNamespace or not gameNamespace then
-        error("TypeRegistry is not initialized. Call TypeRegistry.Init() first.")
+        LogManager.LogError("TypeRegistry is not initialized. Call TypeRegistry.Init() first.")
         return
     end
 
@@ -31,6 +34,11 @@ function TypeRegistry.Get(className)
     local foundClass = gameNamespace[className]
     if foundClass then
         return foundClass
+    end
+
+    -- ゲームのScriptsテーブルも探す
+    if gameNamespace.Scripts and gameNamespace.Scripts[className] then
+        return gameNamespace.Scripts[className]
     end
 
     -- エンジンのトップレベルを探す
@@ -45,7 +53,7 @@ function TypeRegistry.Get(className)
     end
 
     -- 見つからなければnilを返す
-    print("Warning: Class '" .. className .. "' not found in any registry.")
+    LogManager.LogWarning("Class '" .. className .. "' not found in any registry.")
     return nil
 end
 

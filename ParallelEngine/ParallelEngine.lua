@@ -7,6 +7,7 @@ ParallelEngine.Components = require("Core.Components")
 ParallelEngine.Objects = require("Core.Objects")
 
 ParallelEngine.GameObject = require("Core.GameObject")
+ParallelEngine.LogManager = require("Core.LogManager")
 ParallelEngine.Scene = require("Core.Scene")
 ParallelEngine.SceneManager = require("Core.SceneManager")
 ParallelEngine.Transform = require("Core.Transform")
