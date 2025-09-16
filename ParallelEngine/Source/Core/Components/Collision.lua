@@ -4,6 +4,8 @@ local Component = require("Core.Abstracts.Component")
 local RigidBody = require("Core.Components.RigidBody")
 --- @class Physics
 local Physics = require("Core.Physics")
+--- @class LogManager
+local LogManager = require("Core.LogManager")
 
 --- @class Collision:Component
 local Collision = Component:Extend()
@@ -12,17 +14,22 @@ Collision.__name = "Collision"
 
 Collision.Serializable = {"_enabled", "size", "offset", "isSensor"}
 
-function Collision.New(properties)
+--- @param gameObject GameObject
+--- @param properties CollisionPropertiesDefinition
+function Collision.New(gameObject, properties)
     local instance = setmetatable({}, Collision)
-    instance:Init(properties)
+    instance:Init(gameObject, properties)
     return instance
 end
 
-function Collision:Init(properties)
+--- @param gameObject GameObject
+--- @param properties CollisionPropertiesDefinition
+function Collision:Init(gameObject, properties)
     self.super:Init()
     properties = properties or {}
 
-    self.size = properties.size or {x=32, y=32}
+    self.gameObject = gameObject
+    self.size = properties.size or {x=self.gameObject.transform.scale.x, y=self.gameObject.transform.scale.y} or {x=32, y=32}
     self.offset = properties.offset or {x=0, y=0}
     self.isSensor = properties.isSensor or false
     self._enabled = properties._enabled
@@ -31,22 +38,24 @@ function Collision:Init(properties)
     self.shape = nil
 end
 
-function Collision:CreateFixture()
+-- StartでFixtureを生成するように変更
+function Collision:Start()
     if self.fixture then return end
 
     --- @type RigidBody|nil
-    local rb = nil
-    if self.gameObject then
-        rb = self.gameObject:GetComponent(RigidBody)
-    end
+    local rb = self.gameObject and self.gameObject:GetComponent(RigidBody)
+
+    -- RigidBodyが見つからない場合、自動で追加する
     if not rb and self.gameObject then
-        -- 自動で Rigidbody を作ってアタッチし、その参照を受け取る
+        LogManager.LogWarning("Collision component requires a RigidBody component. Automatically adding one.")
         rb = self.gameObject:AddComponent(RigidBody, {mass=1.0, _enabled=true})
     end
-    if rb and not rb.body then
-        if rb.CreateBody then pcall(function() rb:CreateBody() end) end
+
+    -- RigidBodyまたはそのBodyが存在しない場合はエラー
+    if not rb or not rb.body then
+        LogManager.LogError("Failed to create fixture: RigidBody or its physics body is not available.")
+        return
     end
-    if not rb or not rb.body then return end
 
     local hx = (self.size.x or 32) / 2
     local hy = (self.size.y or 32) / 2
@@ -55,7 +64,9 @@ function Collision:CreateFixture()
     self.fixture:setSensor(self.isSensor)
     self.fixture:setUserData(self)
     -- RigidBody 側でも fixture を追跡しておく
-    if rb and rb.shapes then table.insert(rb.shapes, self.fixture) end
+    if rb.shapes then
+        table.insert(rb.shapes, self.fixture)
+    end
 end
 
 function Collision:OnCollisionEnter(other)
@@ -65,13 +76,10 @@ end
 function Collision:OnCollisionExit(other)
 end
 
-function Collision:Update(dt)
-    if not self:IsEnabled() then return end
-    if not self.fixture then self:CreateFixture() end
-end
-
 function Collision:Destroy()
-    if self.fixture then pcall(function() self.fixture:destroy() end) end
+    if self.fixture then
+        pcall(function() self.fixture:destroy() end)
+    end
     self.fixture = nil
     self.shape = nil
 end
@@ -79,5 +87,6 @@ end
 function Collision:Dump()
     return Component.Dump(self)
 end
+
 
 return Collision

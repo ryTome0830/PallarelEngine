@@ -67,7 +67,6 @@ function Scene:AddGameObject(gameObject)
     end
 
     table.insert(self.gameObjects, gameObject)
-    LogManager.Log("GameObjects: " .. #self.gameObjects .." " .. self.gameObjects[#self.gameObjects].name)
 end
 
 function Scene:Awake()

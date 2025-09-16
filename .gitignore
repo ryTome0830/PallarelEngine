@@ -5,6 +5,4 @@
 
 conf.lua
 main.lua
-*_1.lua
-*_2.lua
-*_3.lua
+Scenes/

@@ -1,4 +1,7 @@
+--- @class Component
 local Component = ParallelEngine.Abstracts.Component
+--- @class LogManager
+local LogManager = ParallelEngine.LogManager
 
 --- @class PlayerController:Component
 local PlayerController = Component:Extend()
@@ -26,9 +29,28 @@ function PlayerController:Init(props)
     self.xSpeedScale = math.random(-10, 10)
 end
 
+function PlayerController:Awake()
+    self.rb = self.gameObject:GetComponent(ParallelEngine.Components.RigidBody)
+    if not self.rb then
+        LogManager.LogError(self.gameObject.name .. "RigidBodyが見つかりません")
+    end
+end
+
 function PlayerController:Update(dt)
-    self.gameObject.transform.position.x = self.gameObject.transform.position.x + self.speed * self.xSpeedScale * dt
-    self.gameObject.transform.position.y = self.gameObject.transform.position.y + self.speed * self.ySpeedScale * dt
+    if not self.rb then return end
+
+    local velocityX, velocityY = self.rb.body:getLinearVelocity()
+    local moveSpeed = 300
+
+    if love.keyboard.isDown("d") then
+        velocityX = moveSpeed
+    elseif love.keyboard.isDown("a") then
+        velocityX = -moveSpeed
+    else
+        velocityX = 0
+    end
+
+    self.rb:SetVelocity(velocityX, velocityY)
 end
 
 function PlayerController:__tostring()

@@ -1,6 +1,7 @@
 --- @class TypeRegistry
 local TypeRegistry = require("Core.TypeRegistry")
-
+--- @class Physics
+local Physics = require("Core.Physics")
 --- @class Scene
 local Scene = require("Core.Scene")
 --- @class GameObject
@@ -59,6 +60,7 @@ end
 --- @param dt number
 function SceneManager:UpdateScene(dt)
     self.currentScene:Update(dt)
+    Physics.Update(dt)
 end
 
 function SceneManager:DrawScene()
@@ -72,7 +74,8 @@ function SceneManager:ParseSecne(sceneTable)
             goDef.name,
             Vector2.New(goDef.properties.transform.position.x, goDef.properties.transform.position.y),
             goDef.properties.transform.rotation,
-            Vector2.New(goDef.properties.transform.scale.x, goDef.properties.transform.scale.y)
+            Vector2.New(goDef.properties.transform.scale.x, goDef.properties.transform.scale.y),
+            goDef.properties._enabled
         )
 
         if goDef.components then
@@ -113,7 +116,6 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
             priorityMap[name] = i
         end
     end
-    print(ToStringTable(priorityMap))
 
     for _, go in ipairs(self.currentScene.gameObjects) do
         if go.name == "GameManager" then

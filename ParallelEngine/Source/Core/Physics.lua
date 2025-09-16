@@ -1,15 +1,17 @@
+--- @class Physics
 local Physics = {}
 
-local love_physics = love.physics
+--- @type love.physics
+local lovePhysics = love.physics
 
 -- 初期重力をピクセル単位で設定（任意調整可能）
 local gravityX, gravityY = 0, 9.81 * 64
 
 local world = nil
 
-local function ensureWorld()
+local function EnsureWorld()
     if not world then
-        world = love_physics.newWorld(gravityX, gravityY, true)
+        world = lovePhysics.newWorld(gravityX, gravityY, true)
 
         local function beginContact(a, b, contact)
             local ua = a:getUserData()
@@ -38,13 +40,15 @@ local function ensureWorld()
     return world
 end
 
+--- @return love.World
 function Physics.GetWorld()
-    return ensureWorld()
+    return EnsureWorld()
 end
 
 function Physics.Update(dt)
     if not world then return end
     world:update(dt)
 end
+
 
 return Physics

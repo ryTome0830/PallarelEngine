@@ -10,8 +10,9 @@ Component.Serializable = {"_enabled"}
 
 -- === construct method ===
 
+--- @param gameObject GameObject
 --- @param properties table
-function Component.New(properties)
+function Component.New(gameObject, properties)
 end
 
 --- @param properties table

@@ -1,6 +1,6 @@
 --- @class Component
 local Component = require("Core.Abstracts.Component")
---- @class Pyhics
+--- @class Physics
 local Physics = require("Core.Physics")
 
 --- @class RigidBody:Component
@@ -10,25 +10,33 @@ RigidBody.__name = "RigidBody"
 
 RigidBody.Serializable = {"_enabled", "mass", "bodyType"}
 
-function RigidBody.New(properties)
+
+--- @param gameObject GameObject
+--- @param properties RigidBodyPropertiesDefinition
+function RigidBody.New(gameObject, properties)
     local instance = setmetatable({}, RigidBody)
-    instance:Init(properties)
+    instance:Init(gameObject, properties)
+
     return instance
 end
 
-function RigidBody:Init(properties)
+--- @param gameObject GameObject
+--- @param properties RigidBodyPropertiesDefinition
+function RigidBody:Init(gameObject, properties)
     self.super:Init()
     properties = properties or {}
 
+    self.gameObject = gameObject
     self.mass = properties.mass or 1.0
-    self.bodyType = properties.bodyType or "dynamic" -- dynamic, static, kinematic
+    self.bodyType = properties.bodyType or "dynamic"
     self._enabled = properties._enabled
 
     self.body = nil
     self.shapes = {}
 end
 
-function RigidBody:CreateBody()
+-- AwakeでBodyを生成するように変更
+function RigidBody:Awake()
     if self.body then return end
     local world = Physics.GetWorld()
     if not world then return end
@@ -47,10 +55,15 @@ function RigidBody:ApplyForce(fx, fy)
     self.body:applyForce(fx or 0, fy or 0)
 end
 
+--- @param vx number x軸の速度
+--- @param vy number y軸の速度
+function RigidBody:SetVelocity(vx, vy)
+    if not self.body then print("noBody") return end
+    self.body:setLinearVelocity(vx or 0, vy or 0)
+end
+
 function RigidBody:Update(dt)
-    if not self:IsEnabled() then return end
-    if not self.body then self:CreateBody() end
-    if not self.body then return end
+    if not self:IsEnabled() or not self.body then return end
 
     -- sync transform with physics body
     local x, y = self.body:getPosition()

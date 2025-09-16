@@ -26,11 +26,12 @@ GameObject.__name = "GameObject"
 --- @param position? Vector2
 --- @param rotation? number
 --- @param scale? Vector2
+--- @param initEnabled? boolean 
 --- @return GameObject
-function GameObject.New(name, position, rotation, scale)
+function GameObject.New(name, position, rotation, scale, initEnabled)
     --- @class GameObject
     local instance = setmetatable({}, GameObject)
-    instance:Init(name, position, rotation, scale)
+    instance:Init(name, position, rotation, scale, initEnabled)
 
     return instance
 end
@@ -40,7 +41,8 @@ end
 --- @param position? Vector2
 --- @param rotation? number
 --- @param scale? Vector2
-function GameObject:Init(name, position, rotation, scale)
+--- @param initEnabled? boolean
+function GameObject:Init(name, position, rotation, scale, initEnabled)
     self.super:Init()
 
     --- @type boolean
@@ -52,8 +54,13 @@ function GameObject:Init(name, position, rotation, scale)
     --- @type string
     self.uuid = self:GenerateUUID()
 
+    if initEnabled == nil then
+        self._enabled = true
+    else
+        self._enabled = initEnabled
+    end
+
     --- @type Transform
-    --- @
     self.transform = Transform.New(
         self,
         position or Vector2.Zero(),
@@ -71,7 +78,8 @@ function GameObject:Clone()
         self.name .. "(clone)",
         self.transform.position:Clone(),
         self.transform.rotation,
-        self.transform.scale:Clone()
+        self.transform.scale:Clone(),
+        self._enabled
     )
 
     for _, component in ipairs(self.components) do
@@ -139,13 +147,13 @@ function GameObject:Dump(isStrict)
         properties.transform = {position={x=0, y=0}, rotation=0, scale={x=1, y=1}}
     end
     if self._enabled ~= nil then
-        properties.enabled = self._enabled
+        properties._enabled = self._enabled
     else
         if isStrict then
             LogManager.LogError("Error: GameObject._enabled state is missing.")
             return nil
         end
-        properties.enabled = true
+        properties._enabled = true
     end
 
     goData.properties = properties
@@ -194,7 +202,7 @@ function GameObject:AddComponent(componentClass, properties)
     end
 
     --- @class Component
-    local newComponent = componentClass.New(properties)
+    local newComponent = componentClass.New(self, properties)
     if not newComponent:Is(Component) then
         LogManager.LogError("GameObjectに追加できるのはComponentを継承したクラスのみです")
         return nil
@@ -208,10 +216,7 @@ function GameObject:AddComponent(componentClass, properties)
     newComponent.gameObject = self
 
     table.insert(self.components, newComponent)
-
-    if newComponent.Awake then
-        newComponent:Awake()
-    end
+    newComponent:Awake()
 
     return newComponent
 end
@@ -221,7 +226,7 @@ end
 --- @param componentClass T
 --- @return T|nil
 function GameObject:GetComponent(componentClass)
-    for _, component in pairs(self.components) do
+    for _, component in ipairs(self.components) do
         if TypeOf(component, componentClass) then
             return component
         end
