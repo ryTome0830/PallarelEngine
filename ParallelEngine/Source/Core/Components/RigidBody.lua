@@ -11,6 +11,8 @@ RigidBody.__name = "RigidBody"
 RigidBody.Serializable = {"_enabled", "mass", "bodyType"}
 
 
+local PPM = Physics.PPM
+
 --- @param gameObject GameObject
 --- @param properties RigidBodyPropertiesDefinition
 function RigidBody.New(gameObject, properties)
@@ -35,18 +37,18 @@ function RigidBody:Init(gameObject, properties)
     self.shapes = {}
 end
 
--- AwakeでBodyを生成するように変更
 function RigidBody:Awake()
     if self.body then return end
     local world = Physics.GetWorld()
-    if not world then return end
 
+    if not world then return end
     local t = self.gameObject and self.gameObject.transform
     local x, y = 0, 0
-    if t and t.position then x, y = t.position.x, t.position.y end
-
+    if t and t.position then
+        x, y = t.position.x / PPM, t.position.y / PPM
+    end
     self.body = love.physics.newBody(world, x, y, self.bodyType)
-    self.body:setMass(self.mass)
+        self.body:setMass(self.mass)
     self.body:setUserData(self)
 end
 
@@ -65,11 +67,10 @@ end
 function RigidBody:Update(dt)
     if not self:IsEnabled() or not self.body then return end
 
-    -- sync transform with physics body
     local x, y = self.body:getPosition()
     if self.gameObject and self.gameObject.transform then
-        self.gameObject.transform.position.x = x
-        self.gameObject.transform.position.y = y
+        self.gameObject.transform.position.x = x * PPM
+        self.gameObject.transform.position.y = y * PPM
     end
 end
 

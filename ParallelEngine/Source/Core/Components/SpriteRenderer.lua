@@ -31,7 +31,13 @@ function SpriteRenderer:Init(gameObject, properties)
     self.texturePath = properties.texturePath or nil
     self.color = properties.color or {1,1,1,1}
     self.origin = properties.origin or {x=0, y=0}
-    self._enabled = properties._enabled
+
+    if properties._enabled == nil then
+        self._enabled = true
+    else
+        self._enabled = properties._enabled
+    end
+
     self.crop = properties.crop
     self.size = properties.size or {w=self.gameObject.transform.scale.x, h=self.gameObject.transform.scale.y}
 
@@ -41,11 +47,21 @@ function SpriteRenderer:Init(gameObject, properties)
         local ok, img = pcall(love.graphics.newImage, self.texturePath)
         if ok then
             self.image = img
+            -- self.origin の設定を、画像読み込み後に移動・修正
+            if not properties.origin then
+                -- propertiesでoriginが指定されていなければ、画像の中心を原点にする
+                self.origin = {x = img:getWidth() / 2, y = img:getHeight() / 2}
+            end
+
             if self.crop then
                 self.quad = love.graphics.newQuad(
                     self.crop.x, self.crop.y, self.crop.w, self.crop.h,
                     img:getWidth(), img:getHeight()
                 )
+                if not properties.origin then
+                    -- crop（切り抜き）がある場合は、切り抜いたサイズの中央を原点にする
+                    self.origin = {x = self.crop.w / 2, y = self.crop.h / 2}
+                end
             end
         else
             LogManager.LogError("texturePath is not available")
@@ -87,9 +103,9 @@ function SpriteRenderer:Draw()
         end
         local rotationRad = math.rad(t.rotation)
         if self.quad then
-            love.graphics.draw(self.image, self.quad, t.position.x, t.position.y, t.rotation, scaleX, scaleY, self.origin.x, self.origin.y)
+            love.graphics.draw(self.image, self.quad, t.position.x, t.position.y, rotationRad, scaleX, scaleY, self.origin.x, self.origin.y)
         else
-            love.graphics.draw(self.image, t.position.x, t.position.y, t.rotation, scaleX, scaleY, self.origin.x, self.origin.y)
+            love.graphics.draw(self.image, t.position.x, t.position.y, rotationRad, scaleX, scaleY, self.origin.x, self.origin.y)
         end
     end
 

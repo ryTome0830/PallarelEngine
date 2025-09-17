@@ -169,7 +169,7 @@ end
 
 --- @private
 function Vector2:__tostring()
-    return string.format("Vector2(%f, %f)", self.x, self.y)
+    return string.format("Vector2(%.2f, %.2f)", self.x, self.y)
 end
 
 return Vector2

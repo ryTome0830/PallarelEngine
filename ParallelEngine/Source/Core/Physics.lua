@@ -1,17 +1,19 @@
 --- @class Physics
 local Physics = {}
 
+Physics.PPM = 128 / 10
+Physics.graVityX = 0
+Physics.gravityY = 9.8 / 100
+
 --- @type love.physics
 local lovePhysics = love.physics
 
--- 初期重力をピクセル単位で設定（任意調整可能）
-local gravityX, gravityY = 0, 9.81 * 64
-
+--- @type love.World|nil
 local world = nil
 
 local function EnsureWorld()
     if not world then
-        world = lovePhysics.newWorld(gravityX, gravityY, true)
+        world = lovePhysics.newWorld(Physics.graVityX * Physics.PPM, Physics.gravityY * Physics.PPM, true)
 
         local function beginContact(a, b, contact)
             local ua = a:getUserData()
@@ -50,5 +52,57 @@ function Physics.Update(dt)
     world:update(dt)
 end
 
+-- >> DEV
+local a = false
+function Physics.DrawCollisionMesh()
+    if not world then return end
+
+    love.graphics.push()
+    love.graphics.setLineWidth(1)
+
+    --- @param body love.Body
+    for _, body in ipairs(world:getBodies()) do
+        love.graphics.push()
+        love.graphics.translate(body:getX() * Physics.PPM, body:getY() * Physics.PPM)
+        love.graphics.rotate(body:getAngle())
+
+        if body:getType() == "static" then
+            love.graphics.setColor(0, 1, 0, 0.7)
+        elseif body:getType() == "kinematic" then
+            love.graphics.setColor(0, 1, 1, 0.7)
+        else
+            love.graphics.setColor(1, 0, 1, 0.7)
+        end
+
+        --- @param fixture love.Fixture
+        for _, fixture in ipairs(body:getFixtures()) do
+            --- @type love.Shape
+            local shape = fixture:getShape()
+            local shapeType = shape:getType()
+
+            if shapeType == "polygon" then
+                local pointsInPixels = {}
+                --- @cast shape love.PolygonShape
+                for i, v in ipairs({shape:getPoints()}) do
+                    pointsInPixels[i] = v * Physics.PPM
+                end
+                love.graphics.polygon("line", pointsInPixels)
+                if not a then print(ToStringTable(pointsInPixels)) end
+                a = true
+
+            elseif shapeType == "circle" then
+                --- @cast shape love.CircleShape
+                local cx_m, cy_m = shape:getPoint()
+                local radius_m = shape:getRadius()
+                love.graphics.circle("line", cx_m * Physics.PPM, cy_m * Physics.PPM, radius_m * Physics.PPM)
+            end
+        end
+
+        love.graphics.pop()
+    end
+
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.pop()
+end
 
 return Physics

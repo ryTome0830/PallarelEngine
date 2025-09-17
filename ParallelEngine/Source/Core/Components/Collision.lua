@@ -14,6 +14,8 @@ Collision.__name = "Collision"
 
 Collision.Serializable = {"_enabled", "size", "offset", "isSensor"}
 
+local PPM = Physics.PPM
+
 --- @param gameObject GameObject
 --- @param properties CollisionPropertiesDefinition
 function Collision.New(gameObject, properties)
@@ -31,46 +33,71 @@ function Collision:Init(gameObject, properties)
     self.gameObject = gameObject
     self.size = properties.size or {x=self.gameObject.transform.scale.x, y=self.gameObject.transform.scale.y} or {x=32, y=32}
     self.offset = properties.offset or {x=0, y=0}
-    self.isSensor = properties.isSensor or false
-    self._enabled = properties._enabled
+
+    if properties.isSensor == nil then
+        self.isSensor = false
+    else
+        self.isSensor = properties.isSensor
+    end
+
+    if properties._enabled == nil then
+        self._enabled = true
+    else
+        self._enabled = properties._enabled
+    end
 
     self.fixture = nil
     self.shape = nil
 end
 
--- StartでFixtureを生成するように変更
 function Collision:Start()
     if self.fixture then return end
 
     --- @type RigidBody|nil
     local rb = self.gameObject and self.gameObject:GetComponent(RigidBody)
 
-    -- RigidBodyが見つからない場合、自動で追加する
-    if not rb and self.gameObject then
-        LogManager.LogWarning("Collision component requires a RigidBody component. Automatically adding one.")
-        rb = self.gameObject:AddComponent(RigidBody, {mass=1.0, _enabled=true})
-    end
-
-    -- RigidBodyまたはそのBodyが存在しない場合はエラー
-    if not rb or not rb.body then
-        LogManager.LogError("Failed to create fixture: RigidBody or its physics body is not available.")
+    if not rb then
+        LogManager.LogError("Collision component requires a RigidBody component on '" .. self.gameObject.name .. "'.")
         return
     end
 
-    local hx = (self.size.x or 32) / 2
-    local hy = (self.size.y or 32) / 2
-    self.shape = love.physics.newRectangleShape(hx*2, hy*2)
+    if not rb.body then
+        LogManager.LogError("Failed to create fixture: RigidBody's physics body is not available. Check initialization order.")
+        return
+    end
+
+    print(string.format("[Collision] '%s' の当たり判定サイズ（ピクセル）: x=%.2f, y=%.2f", self.gameObject.name, self.size.x, self.size.y))
+
+    local width_m = (self.size.x or 32) / PPM
+    local height_m = (self.size.y or 32) / PPM
+    local offsetX_m = (self.offset.x or 0) / PPM
+    local offsetY_m = (self.offset.y or 0) / PPM
+
+    if width_m <= 0 or height_m <= 0 then
+        LogManager.LogError(string.format(
+            "Invalid collision shape size for '%s'. Width and height must be positive. Got size: (%f, %f)",
+            self.gameObject.name, self.size.x, self.size.y
+        ))
+        return
+    end
+
+    print(string.format("[Collision] '%s' が物理エンジンに渡すサイズ（メートル）: w=%.4f, h=%.4f", self.gameObject.name, width_m, height_m))
+    self.shape = love.physics.newRectangleShape(offsetX_m, offsetY_m, width_m, height_m)
+
+
     self.fixture = love.physics.newFixture(rb.body, self.shape)
     self.fixture:setSensor(self.isSensor)
     self.fixture:setUserData(self)
-    -- RigidBody 側でも fixture を追跡しておく
+
     if rb.shapes then
         table.insert(rb.shapes, self.fixture)
     end
 end
 
 function Collision:OnCollisionEnter(other)
-    -- デフォルトは何もしない。ユーザーがオーバーライドして使う。
+    -- otherは衝突した相手のCollisionインスタンス
+    print(self.gameObject.name .. " が " .. (other.gameObject and other.gameObject.name or "不明") .. " と衝突しました")
+    -- ここに衝突時の処理を書く（例：ダメージ、反射、サウンド再生など）
 end
 
 function Collision:OnCollisionExit(other)

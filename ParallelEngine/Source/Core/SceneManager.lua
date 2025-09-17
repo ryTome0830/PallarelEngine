@@ -45,11 +45,6 @@ function SceneManager:LoadScene(sceneTable)
     end
     self.currentScene = Scene.New(sceneTable.name, randomSeed, sceneTable.saveRandomeSeed)
     self:ParseSecne(sceneTable)
-
-    if self.currentScene then
-        self.currentScene:Awake()
-        self.currentScene:Start()
-    end
 end
 
 function SceneManager:UnLoadScene()
@@ -65,6 +60,7 @@ end
 
 function SceneManager:DrawScene()
     self.currentScene:Draw()
+    Physics.DrawCollisionMesh()
 end
 
 --- @param sceneTable SceneDefinition
@@ -97,8 +93,8 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
     if not TypeOf(self.currentScene.name, "string") then return end
 
     --- @type file*|nil
-    local f = CheckExistanceFile(dirPath, self.currentScene.name)
-    if not f then return end
+    --local f = CheckExistanceFile(dirPath, self.currentScene.name)
+    -- if not f then return end
 
     local sceneData = {
         name = self.currentScene.name,
@@ -131,14 +127,16 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
         table.insert(sortedGameObjects, go)
     end
 
+    print(#sortedGameObjects)
     for _, go in ipairs(sortedGameObjects) do
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
     end
 
     local sceneContext = "return " .. ToStringTable(sceneData)
-    f:write(sceneContext)
-    f:close()
+    print(sceneContext)
+    -- f:write(sceneContext)
+    -- f:close()
 end
 
 function SceneManager:SerializeScene()

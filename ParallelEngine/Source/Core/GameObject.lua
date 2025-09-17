@@ -70,6 +70,9 @@ function GameObject:Init(name, position, rotation, scale, initEnabled)
 
     --- @type Component[]
     self.components = {}
+
+    --- @type Component[]
+    self.pendingComponents = {}
 end
 
 --- @return GameObject
@@ -213,10 +216,11 @@ function GameObject:AddComponent(componentClass, properties)
         return nil
     end
 
-    newComponent.gameObject = self
+    -- >> DEV
+    -- LogManager.Log("AddComponent: " .. newComponent.__name .. " to " .. self.name)
 
-    table.insert(self.components, newComponent)
-    newComponent:Awake()
+    -- table.insert(self.components, newComponent)
+    table.insert(self.pendingComponents, newComponent)
 
     return newComponent
 end
@@ -227,6 +231,12 @@ end
 --- @return T|nil
 function GameObject:GetComponent(componentClass)
     for _, component in ipairs(self.components) do
+        if TypeOf(component, componentClass) then
+            return component
+        end
+    end
+
+    for _, component in ipairs(self.pendingComponents) do
         if TypeOf(component, componentClass) then
             return component
         end
@@ -265,6 +275,24 @@ end
 
 function GameObject:Update(dt)
     if not self._enabled or self._isDestroyed then return end
+
+    if #self.pendingComponents > 0 then
+        for _, comp in ipairs(self.pendingComponents) do
+            comp:Awake()
+            comp._awaked = true
+        end
+
+        for _, comp in ipairs(self.pendingComponents) do
+            comp:Start()
+            comp._started = true
+        end
+
+        for _, comp in ipairs(self.pendingComponents) do
+            table.insert(self.components, comp)
+        end
+
+        self.pendingComponents = {}
+    end
 
     for _, component in ipairs(self.components) do
         if component:IsEnabled() then
@@ -337,7 +365,8 @@ function GameObject:__tostring()
         self.uuid,
         self._enabled,
         self.transform,
-        ExpandTable(self.components)
+        -- ExpandTable(self.components)
+        #self.components
     )
 end
 

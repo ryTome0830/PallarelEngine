@@ -37,14 +37,15 @@ function Scene:Init(name, randomSeed, saveRandomeSeed)
     self.super:Init()
 
     self.name = name
-    self._awaked = false
-    self._started = false
 
     self.saveRandomeSeed = saveRandomeSeed or false
     self.randomSeed = randomSeed
 
     --- @type GameObject[]
     self.gameObjects = {}
+
+    --- @type GameObject[]
+    self.pendingGameObjects = {}
 end
 
 -- === engine method === 
@@ -61,7 +62,7 @@ end
 
 --- @param gameObject GameObject
 function Scene:AddGameObject(gameObject)
-    if #self.gameObjects >= MAX_GAMEOBJECT_NUM then
+    if #self.gameObjects + #self.pendingGameObjects >= MAX_GAMEOBJECT_NUM then
         LogManager.LogError("1シーンに存在できるGameObjectは " .. MAX_GAMEOBJECT_NUM .. " に制限されています")
         return
     end
@@ -69,41 +70,32 @@ function Scene:AddGameObject(gameObject)
     table.insert(self.gameObjects, gameObject)
 end
 
+--- @private
 function Scene:Awake()
-    if self._awaked then
-        LogManager.LogError("Scene: " .. self.name .. " is already awaked.")
-        return
-    end
 
-    for _, go in ipairs(self.gameObjects) do
-        go:Awake()
-    end
-    self:OnAwake()
-    self._awaked = true
 end
 
+--- @private
 function Scene:Start()
-    if not self._awaked then
-        LogManager.LogError("Scene: " .. self.name .. " is not awaked yet.")
-        return
-    end
-    if self._started then
-        LogManager.LogError("Scene: " .. self.name .. " is already started.")
-        return
-    end
-
-    for _, go in ipairs(self.gameObjects) do
-        go:Start()
-    end
-    self:OnStart()
-    self._started = true
 end
 
 --- @param dt number
 function Scene:Update(dt)
-    if not self._awaked or not self._started then
-        LogManager.LogError("Scene: " .. self.name .. " cannot be executed unless Awake and Start are executed.")
-        return
+    if #self.pendingGameObjects > 0 then
+        for _, go in ipairs(self.pendingGameObjects) do
+            go:Awake()
+            go._awaked = true
+        end
+
+        for _, go in ipairs(self.pendingGameObjects) do
+            go:Start()
+            go._started = true
+        end
+
+        for _, go in ipairs(self.pendingGameObjects) do
+            table.insert(self.gameObjects, go)
+        end
+        self.pendingGameObjects = {}
     end
 
     for _, go in ipairs(self.gameObjects) do
