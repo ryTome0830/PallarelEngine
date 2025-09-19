@@ -40,30 +40,3 @@ local Vector2Definition = {}
 local ComponentDefinition = {}
 
 
-
--- ===== Components =====
-
---- SpriteRendererのプロパティを定義
---- @class SpriteRendererPropertiesDefinition
---- @field _enabled? boolean
---- @field texturePath? string
---- @field color? {r: number, g: number, b: number, a:number} 0 to 1
---- @field origin? {x: number, y: number} 
---- @field crop? {x: number, y: number, w: number, h: number}
---- @field size? {w: number, h: number}
-local SpriteRendererPropertiesDefinition = {}
-
---- RigidBodyのプロパティを定義
---- @class RigidBodyPropertiesDefinition
---- @field _enabled? boolean
---- @field mass? number
---- @field bodyType? love.BodyType
-local RigidBodyPropertiesDefinition = {}
-
---- Collisionのプロパティを定義
---- @class CollisionPropertiesDefinition
---- @field _enabled? boolean
---- @field size? {x: number, y: number}
---- @field offset? {x: number, y: number}
---- @field isSensor? boolean
-local CollisionPropertiesDefinition = {}

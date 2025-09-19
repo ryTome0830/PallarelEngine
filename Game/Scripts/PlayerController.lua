@@ -50,7 +50,12 @@ function PlayerController:Awake()
 
     self.co.OnCollisionEnter = function(other)
         other.gameObject.name = other.gameObject.name or "不明"
-        print(self.gameObject.name .. " が " .. other.gameObject.name .. " と衝突しました")
+        local rb = other.gameObject and other.gameObject:GetComponent(ParallelEngine.Components.RigidBody)
+        if rb and rb.body then
+            local fx = math.random(-100, 100)
+            local fy = math.random(-100, 100)
+            rb:ApplyForce(fx, fy)
+        end
     end
 
 end

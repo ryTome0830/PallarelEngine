@@ -59,7 +59,9 @@ end
 --- @param t table
 --- @param indentLevel? number (default=0)
 --- @return string
-function ToStringTable(t, indentLevel)
+--- @overload fun(t: table): string
+--- @overload fun(t: table, indentLevel: number): string
+function TableToString(t, indentLevel)
     indentLevel = indentLevel or 0
     local indent = string.rep("    ", indentLevel)
     local nextIndent = string.rep("    ", indentLevel + 1)
@@ -84,7 +86,7 @@ function ToStringTable(t, indentLevel)
 
         local valStr
         if type(v) == "table" then
-            valStr = ToStringTable(v, indentLevel + 1)
+            valStr = TableToString(v, indentLevel + 1)
         elseif type(v) == "string" then
             valStr = '"' .. v .. '"'
         else

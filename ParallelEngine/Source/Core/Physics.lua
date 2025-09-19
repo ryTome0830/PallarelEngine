@@ -2,8 +2,8 @@
 local Physics = {}
 
 Physics.PPM = 128 / 10
-Physics.graVityX = 0
-Physics.gravityY = 9.8 / 100
+Physics.gravityX = 0
+Physics.gravityY = 9.8
 
 --- @type love.physics
 local lovePhysics = love.physics
@@ -11,9 +11,16 @@ local lovePhysics = love.physics
 --- @type love.World|nil
 local world = nil
 
+function Physics.ResetWorld()
+    if world then
+        world:destroy()
+        world = nil
+    end
+end
+
 local function EnsureWorld()
     if not world then
-        world = lovePhysics.newWorld(Physics.graVityX * Physics.PPM, Physics.gravityY * Physics.PPM, true)
+        world = lovePhysics.newWorld(Physics.gravityX * Physics.PPM, Physics.gravityY * Physics.PPM, true)
 
         local function beginContact(a, b, contact)
             local ua = a:getUserData()
@@ -52,8 +59,6 @@ function Physics.Update(dt)
     world:update(dt)
 end
 
--- >> DEV
-local a = false
 function Physics.DrawCollisionMesh()
     if not world then return end
 
@@ -87,8 +92,6 @@ function Physics.DrawCollisionMesh()
                     pointsInPixels[i] = v * Physics.PPM
                 end
                 love.graphics.polygon("line", pointsInPixels)
-                if not a then print(ToStringTable(pointsInPixels)) end
-                a = true
 
             elseif shapeType == "circle" then
                 --- @cast shape love.CircleShape

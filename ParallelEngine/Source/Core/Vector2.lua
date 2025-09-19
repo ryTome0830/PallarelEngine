@@ -1,7 +1,6 @@
 --- @class LogManager
 local LogManager = require ("Core.LogManager")
 
-
 --- @class Vector2
 local Vector2 = {}
 Vector2.__index = Vector2
@@ -103,10 +102,9 @@ function Vector2:Distance(v2)
 end
 
 --- ベクトルの回転
---- @param angle number 回転角(度数法)
+--- @param rad number 回転角(弧度法)
 --- @return Vector2
-function Vector2:Rotate(angle)
-    local rad = math.rad(angle)
+function Vector2:Rotate(rad)
     local cos = math.cos(rad)
     local sin = math.sin(rad)
     return Vector2.New(

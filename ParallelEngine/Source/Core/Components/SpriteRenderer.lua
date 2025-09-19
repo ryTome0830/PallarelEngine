@@ -5,6 +5,14 @@ local Transform = require("Core.Transform")
 --- @class LogManager
 local LogManager = require("Core.LogManager")
 
+--- @class SpriteRendererProperties
+--- @field _enabled? boolean
+--- @field texturePath? string
+--- @field color? {r: number, g: number, b: number, a:number} 0 to 1
+--- @field origin? {x: number, y: number} 
+--- @field crop? {x: number, y: number, w: number, h: number}
+--- @field size? {w: number, h: number}
+
 --- @class SpriteRenderer:Component
 local SpriteRenderer = Component:Extend()
 SpriteRenderer.__index = SpriteRenderer
@@ -12,9 +20,11 @@ SpriteRenderer.__name = "SpriteRenderer"
 
 SpriteRenderer.Serializable = {"_enabled", "texturePath", "color", "origin", "crop", "size"}
 
+-- 画像キャッシュテーブル
+local ImageCache = {}
 
 --- @param gameObject GameObject
---- @param properties SpriteRendererPropertiesDefinition
+--- @param properties SpriteRendererProperties
 function SpriteRenderer.New(gameObject, properties)
     local instance = setmetatable({}, SpriteRenderer)
     instance:Init(gameObject, properties)
@@ -22,7 +32,7 @@ function SpriteRenderer.New(gameObject, properties)
 end
 
 --- @param gameObject GameObject
---- @param properties SpriteRendererPropertiesDefinition
+--- @param properties SpriteRendererProperties
 function SpriteRenderer:Init(gameObject, properties)
     self.super:Init()
     properties = properties or {}
@@ -44,22 +54,28 @@ function SpriteRenderer:Init(gameObject, properties)
     self.image = nil
     self.quad = nil
     if self.texturePath then
-        local ok, img = pcall(love.graphics.newImage, self.texturePath)
-        if ok then
-            self.image = img
-            -- self.origin の設定を、画像読み込み後に移動・修正
+        if ImageCache[self.texturePath] then
+            self.image = ImageCache[self.texturePath]
+        else
+            local ok, img = pcall(love.graphics.newImage, self.texturePath)
+            if ok then
+                self.image = img
+                ImageCache[self.texturePath] = img
+            else
+                LogManager.LogError("texturePath is not available")
+            end
+        end
+        if self.image then
             if not properties.origin then
-                -- propertiesでoriginが指定されていなければ、画像の中心を原点にする
-                self.origin = {x = img:getWidth() / 2, y = img:getHeight() / 2}
+                self.origin = {x = self.image:getWidth() / 2, y = self.image:getHeight() / 2}
             end
 
             if self.crop then
                 self.quad = love.graphics.newQuad(
                     self.crop.x, self.crop.y, self.crop.w, self.crop.h,
-                    img:getWidth(), img:getHeight()
+                    self.image:getWidth(), self.image:getHeight()
                 )
                 if not properties.origin then
-                    -- crop（切り抜き）がある場合は、切り抜いたサイズの中央を原点にする
                     self.origin = {x = self.crop.w / 2, y = self.crop.h / 2}
                 end
             end
@@ -69,27 +85,23 @@ function SpriteRenderer:Init(gameObject, properties)
     end
 end
 
+
 function SpriteRenderer:Draw()
     if not self:IsEnabled() then return end
-    -- if not self.image then return end
     if not self.gameObject or not self.gameObject.transform then return end
 
     local t = self.gameObject.transform
     love.graphics.setColor(self.color)
 
-    -- 画像がない場合は、デバッグ用に四角形を描画する
     if not self.image then
-        -- t.positionをオブジェクトの中心として、四角形を描画
         local w = self.size and self.size.w or t.scale.x
         local h = self.size and self.size.h or t.scale.y
-        -- originを考慮して描画開始位置をオフセット
         local ox = self.origin and self.origin.x or 0
         local oy = self.origin and self.origin.y or 0
 
         love.graphics.push()
         love.graphics.translate(t.position.x, t.position.y)
-        -- Transformのrotationは度数法なのでラジアンに変換
-        love.graphics.rotate(math.rad(t.rotation))
+        love.graphics.rotate(t.rotation)
         love.graphics.rectangle("fill", -w/2, -h/2, w, h)
         love.graphics.pop()
     else
@@ -101,7 +113,7 @@ function SpriteRenderer:Draw()
             scaleX = self.size.w / self.image:getWidth()
             scaleY = self.size.h / self.image:getHeight()
         end
-        local rotationRad = math.rad(t.rotation)
+        local rotationRad = t.rotation
         if self.quad then
             love.graphics.draw(self.image, self.quad, t.position.x, t.position.y, rotationRad, scaleX, scaleY, self.origin.x, self.origin.y)
         else
@@ -112,8 +124,5 @@ function SpriteRenderer:Draw()
     love.graphics.setColor(1,1,1,1)
 end
 
-function SpriteRenderer:Dump()
-    return Component.Dump(self)
-end
 
 return SpriteRenderer

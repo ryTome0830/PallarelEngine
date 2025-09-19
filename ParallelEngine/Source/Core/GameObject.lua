@@ -14,6 +14,7 @@ local LogManager = require("Core.LogManager")
 --- @type integer
 local MAX_COMPONENT_NUM = 6
 
+
 --- @class GameObject:Orbit
 local GameObject = Orbit:Extend()
 GameObject.__index = GameObject
@@ -191,7 +192,7 @@ end
 --- コンポーネントをGameObjectに追加する
 --- @generic T:Component
 --- @param componentClass T
---- @param properties table ComponentClassのNewに渡す引数
+--- @param properties table
 --- @return T|nil
 function GameObject:AddComponent(componentClass, properties)
     if #self.components >= MAX_COMPONENT_NUM then
@@ -216,10 +217,6 @@ function GameObject:AddComponent(componentClass, properties)
         return nil
     end
 
-    -- >> DEV
-    -- LogManager.Log("AddComponent: " .. newComponent.__name .. " to " .. self.name)
-
-    -- table.insert(self.components, newComponent)
     table.insert(self.pendingComponents, newComponent)
 
     return newComponent

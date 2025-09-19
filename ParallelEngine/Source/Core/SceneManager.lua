@@ -33,6 +33,8 @@ end
 function SceneManager:Init()
     --- @type Scene
     self.currentScene = nil
+    --- @type number
+    self.updateInterval = 0.02
 end
 
 --- @param sceneTable SceneDefinition
@@ -52,15 +54,20 @@ function SceneManager:UnLoadScene()
     self.currentScene = nil
 end
 
---- @param dt number
+
+local accumulatedTime = 0
 function SceneManager:UpdateScene(dt)
-    self.currentScene:Update(dt)
-    Physics.Update(dt)
+    accumulatedTime = accumulatedTime + dt
+    if accumulatedTime >= self.updateInterval then
+        Physics.Update(accumulatedTime)
+        self.currentScene:Update(accumulatedTime)
+        accumulatedTime = 0
+    end
 end
 
 function SceneManager:DrawScene()
-    self.currentScene:Draw()
     Physics.DrawCollisionMesh()
+    self.currentScene:Draw()
 end
 
 --- @param sceneTable SceneDefinition
@@ -93,9 +100,10 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
     if not TypeOf(self.currentScene.name, "string") then return end
 
     --- @type file*|nil
-    --local f = CheckExistanceFile(dirPath, self.currentScene.name)
-    -- if not f then return end
+    local f = CheckExistanceFile(dirPath, self.currentScene.name)
+    if not f then return end
 
+    --- @type SceneDefinition
     local sceneData = {
         name = self.currentScene.name,
         randomSeed = self.currentScene.randomSeed,
@@ -103,40 +111,50 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
         gameObjects = {}
     }
 
-    local sortedGameObjects = {}
-    local others = {}
-
-    local priorityMap = {}
+    -- 優先順位を管理するマップを作成 (GameManagerを最優先とする)
+    local priorityMap = { ["GameManager"] = 0 }
     if prioritiseGameObjects then
         for i, name in ipairs(prioritiseGameObjects) do
+            -- GameManagerより後の優先度を割り当てる
             priorityMap[name] = i
         end
     end
 
+    --- @type GameObject[]
+    local prioritizedList = {}
+    --- @type GameObject[]
+    local othersList = {}
+
+    -- Step 1: 1回のループでオブジェクトを優先リストと通常リストに振り分ける (O(N))
     for _, go in ipairs(self.currentScene.gameObjects) do
-        if go.name == "GameManager" then
-            table.insert(sortedGameObjects, go)
-        elseif priorityMap[go.name] then
-            table.insert(sortedGameObjects, 1 + priorityMap[go.name], go)
+        if priorityMap[go.name] ~= nil then
+            table.insert(prioritizedList, go)
         else
-            table.insert(others, go)
+            table.insert(othersList, go)
         end
     end
 
-    for _, go in ipairs(others) do
-        table.insert(sortedGameObjects, go)
-    end
+    -- Step 2: 優先リスト内をpriorityMapに基づいてソートする (O(P log P))
+    -- PはprioritizedListの要素数
+    table.sort(prioritizedList, function(a, b)
+        return priorityMap[a.name] < priorityMap[b.name]
+    end)
 
-    print(#sortedGameObjects)
-    for _, go in ipairs(sortedGameObjects) do
+    -- Step 3: 優先リストと通常リストを結合する (O(N))
+    -- まず優先リストの要素を追加
+    for _, go in ipairs(prioritizedList) do
+        local goData = go:Dump()
+        table.insert(sceneData.gameObjects, goData)
+    end
+    -- 次に通常リストの要素を追加
+    for _, go in ipairs(othersList) do
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
     end
 
-    local sceneContext = "return " .. ToStringTable(sceneData)
-    print(sceneContext)
-    -- f:write(sceneContext)
-    -- f:close()
+    local sceneContext = "return " .. TableToString(sceneData)
+    f:write(sceneContext)
+    f:close()
 end
 
 function SceneManager:SerializeScene()

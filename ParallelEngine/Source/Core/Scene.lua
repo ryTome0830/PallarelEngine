@@ -7,7 +7,7 @@ local LogManager = require("Core.LogManager")
 
 --- シーン中のオブジェクトの最大数
 --- @type integer
-local MAX_GAMEOBJECT_NUM = 100
+local MAX_GAMEOBJECT_NUM = 1000
 
 --- @class Scene:Object
 local Scene = Object:Extend()

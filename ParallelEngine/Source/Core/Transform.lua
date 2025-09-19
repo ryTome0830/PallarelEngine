@@ -127,8 +127,8 @@ end
 
 --- @private
 function Transform:__tostring()
-    return string.format("Transform(pos: %s, rotation: %f, scale: %s)",
-        tostring(self.position), self.rotation, tostring(self.scale)
+    return string.format("Transform(pos: %s, rotation: %.2f°, scale: %s)",
+        tostring(self.position), math.deg(self.rotation), tostring(self.scale)
     )
 end
 
