@@ -2,6 +2,8 @@
 local Component = require("Core.Abstracts.Component")
 --- @class Transform
 local Transform = require("Core.Transform")
+--- @class Collision
+local Collision = require("Core.Components.Collision")
 --- @class LogManager
 local LogManager = require("Core.LogManager")
 
@@ -21,7 +23,9 @@ SpriteRenderer.__name = "SpriteRenderer"
 SpriteRenderer.Serializable = {"_enabled", "texturePath", "color", "origin", "crop", "size"}
 
 -- 画像キャッシュテーブル
+--- @type table<string, love.Image>
 local ImageCache = {}
+local VISUAL_PADDING = 4
 
 --- @param gameObject GameObject
 --- @param properties SpriteRendererProperties
@@ -37,19 +41,21 @@ function SpriteRenderer:Init(gameObject, properties)
     self.super:Init()
     properties = properties or {}
 
+    -- UnSerializable
     self.gameObject = gameObject
+    --- @private
+    --- @type {w: number, h: number}
+    self.drawSize = {w = 0, h = 0}
+    --- @private
+    --- @type {w: number, h:number}
+    self.drawScale = {w = 1, h = 1}
+
+    -- Serializable
     self.texturePath = properties.texturePath or nil
     self.color = properties.color or {1,1,1,1}
     self.origin = properties.origin or {x=0, y=0}
-
-    if properties._enabled == nil then
-        self._enabled = true
-    else
-        self._enabled = properties._enabled
-    end
-
+    self._enabled = properties._enabled ~= false
     self.crop = properties.crop
-    self.size = properties.size or {w=self.gameObject.transform.scale.x, h=self.gameObject.transform.scale.y}
 
     self.image = nil
     self.quad = nil
@@ -83,8 +89,18 @@ function SpriteRenderer:Init(gameObject, properties)
             LogManager.LogError("texturePath is not available")
         end
     end
+
+    self:Resize()
 end
 
+function SpriteRenderer:Start()
+    if self.gameObject then
+        local t = self.gameObject.transform
+        t.onScaleChanged:Subscribe(function(newScale)
+            self:Resize()
+        end)
+    end
+end
 
 function SpriteRenderer:Draw()
     if not self:IsEnabled() then return end
@@ -94,35 +110,50 @@ function SpriteRenderer:Draw()
     love.graphics.setColor(self.color)
 
     if not self.image then
-        local w = self.size and self.size.w or t.scale.x
-        local h = self.size and self.size.h or t.scale.y
-        local ox = self.origin and self.origin.x or 0
-        local oy = self.origin and self.origin.y or 0
-
         love.graphics.push()
         love.graphics.translate(t.position.x, t.position.y)
         love.graphics.rotate(t.rotation)
-        love.graphics.rectangle("fill", -w/2, -h/2, w, h)
+        love.graphics.rectangle(
+            "fill",
+            -self.drawSize.w/2,
+            -self.drawSize.h/2,
+            self.drawSize.w,
+            self.drawSize.h
+        )
         love.graphics.pop()
     else
-        local scaleX, scaleY = t.scale.x, t.scale.y
-        if self.size and self.crop then
-            scaleX = self.size.w / self.crop.w
-            scaleY = self.size.h / self.crop.h
-        elseif self.size then
-            scaleX = self.size.w / self.image:getWidth()
-            scaleY = self.size.h / self.image:getHeight()
-        end
         local rotationRad = t.rotation
         if self.quad then
-            love.graphics.draw(self.image, self.quad, t.position.x, t.position.y, rotationRad, scaleX, scaleY, self.origin.x, self.origin.y)
+            love.graphics.draw(self.image, self.quad, t.position.x, t.position.y, rotationRad, self.drawScale.w, self.drawScale.h, self.origin.x, self.origin.y)
         else
-            love.graphics.draw(self.image, t.position.x, t.position.y, rotationRad, scaleX, scaleY, self.origin.x, self.origin.y)
+            love.graphics.draw(self.image, t.position.x, t.position.y, rotationRad, self.drawScale.w, self.drawScale.h, self.origin.x, self.origin.y)
         end
     end
 
     love.graphics.setColor(1,1,1,1)
 end
 
+--- @private
+function SpriteRenderer:Resize()
+    local scale = self.gameObject.transform.scale
+    local finalSize = {w=scale.x, h=scale.y}
+
+    local collisionComp = self.gameObject:GetComponent(Collision)
+    if collisionComp then
+        finalSize.w = finalSize.w + VISUAL_PADDING
+        finalSize.h = finalSize.h + VISUAL_PADDING
+    end
+
+    self.drawSize = finalSize
+    if self.image then
+        if self.crop then
+            self.drawScale.w = finalSize.w / self.crop.w
+            self.drawScale.h = finalSize.h / self.crop.h
+        else
+            self.drawScale.w = finalSize.w / self.image:getWidth()
+            self.drawScale.h = finalSize.h / self.image:getHeight()
+        end
+    end
+end
 
 return SpriteRenderer

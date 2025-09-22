@@ -6,9 +6,16 @@ local Transform = require("Core.Transform")
 local Vector2 = require("Core.Vector2")
 --- @class Component
 local Component = require("Core.Abstracts.Component")
-
 --- @class LogManager
 local LogManager = require("Core.LogManager")
+--- @class SceneManager
+local SceneManager = require("Core.SceneManager")
+
+--- @class RigidBody
+local RigidBody = require("Core.Components.RigidBody")
+--- @class Collision
+local Collision = require("Core.Components.Collision")
+
 
 --- コンポーネントの最大数
 --- @type integer
@@ -20,7 +27,6 @@ local GameObject = Orbit:Extend()
 GameObject.__index = GameObject
 GameObject.__name = "GameObject"
 
-
 -- === construct method ===
 
 --- @param name string
@@ -28,11 +34,25 @@ GameObject.__name = "GameObject"
 --- @param rotation? number
 --- @param scale? Vector2
 --- @param initEnabled? boolean 
+--- @param autoAddToScene? boolean
 --- @return GameObject
-function GameObject.New(name, position, rotation, scale, initEnabled)
+--- @overload fun(name: string)
+--- @overload fun(name: string, position: Vector2)
+--- @overload fun(name: string, position: Vector2, rotation: number)
+--- @overload fun(name: string, position: Vector2, rotation: number, scale: Vector2)
+--- @overload fun(name: string, position: Vector2, rotation: number, scale: Vector2, initEnabled: boolean)
+--- @overload fun(name: string, position: Vector2, rotation: number, scale: Vector2, initEnabled: boolean, autoAddToScene: boolean)
+function GameObject.New(name, position, rotation, scale, initEnabled, autoAddToScene)
     --- @class GameObject
     local instance = setmetatable({}, GameObject)
     instance:Init(name, position, rotation, scale, initEnabled)
+
+    if autoAddToScene ~= false then
+        local sm = SceneManager.New()
+        if sm.currentScene then
+            sm:AddGameObject(instance)
+        end
+    end
 
     return instance
 end
@@ -309,9 +329,11 @@ function GameObject:Draw()
 end
 
 function GameObject:Destroy()
+    if self._isDestroyed then return end
+
     -- 子を破壊
     for _, child in ipairs(self.transform.children) do
-        child:Destroy()
+        child.gameObject:Destroy()
     end
 
     -- コンポーネントを破壊
@@ -326,6 +348,8 @@ function GameObject:Destroy()
     self.name = nil
     self.uuid = nil
     self.super:Destroy()
+
+    self._isDestroyed = true
 end
 
 
@@ -366,6 +390,8 @@ function GameObject:__tostring()
         #self.components
     )
 end
+
+
 
 
 

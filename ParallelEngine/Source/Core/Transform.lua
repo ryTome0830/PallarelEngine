@@ -2,6 +2,8 @@
 local Component = require("Core.Abstracts.Component")
 --- @class Vector2
 local Vector2 = require("Core.Vector2")
+--- @class Event
+local Event = require("Core.Utils.Event")
 --- @class LogManager
 local LogManager = require("Core.LogManager")
 
@@ -46,6 +48,12 @@ end
 --- @param scale? Vector2
 function Transform:Init(gameObjectInstance, position, rotation, scale)
     self.super:Init()
+    --- @type Event
+    self.onPositionChanged = Event.New()
+    --- @type Event
+    self.onRotationChanged = Event.New()
+    --- @type Event
+    self.onScaleChanged = Event.New()
 
     self.gameObject = gameObjectInstance
     self.position = position or Vector2.Zero()
@@ -58,6 +66,22 @@ function Transform:Init(gameObjectInstance, position, rotation, scale)
     self.children = {}
 end
 
+--- @param position Vector2
+function Transform:SetPosition(position)
+    self.position = position
+    self.onPositionChanged:Invoke(self)
+end
+
+--- @param rotation number
+function Transform:SetRotation(rotation)
+    self.rotation = rotation
+    self.onRotationChanged:Invoke(self)
+end
+--- @param scale Vector2
+function Transform:SetScale(scale)
+    self.scale = scale
+    self.onScaleChanged:Invoke(self)
+end
 
 -- = override =
 
@@ -127,9 +151,10 @@ end
 
 --- @private
 function Transform:__tostring()
-    return string.format("Transform(pos: %s, rotation: %.2f°, scale: %s)",
-        tostring(self.position), math.deg(self.rotation), tostring(self.scale)
-    )
+    -- return string.format("Transform(pos: %s, rotation: %.2f°, scale: %s)",
+    --     tostring(self.position), math.deg(self.rotation), tostring(self.scale)
+    -- )
+    return "Transform"
 end
 
 --- @private
@@ -137,18 +162,37 @@ function Transform:__newindex(key, value)
     if key == "_enabled" then
         LogManager.LogWarning("Transformの'_enabled'プロパティは機能しません")
         return
-    elseif key == "scale" then
+    end
+    if key == "scale" then
         if not TypeOf(value, Vector2) then
             LogManager.LogError("Transform.scaleにはVector2型の値を設定してください")
             return
         end
         if value.x == 0 or value.y == 0 then
             LogManager.LogWarning("Transformのscaleに0が設定されようとしたため(0.1, 0.1)に自動補正しました")
-            rawset(self, key, Vector2.New(0.1, 0.1))
+            value = Vector2.New(0.1, 0.1)
+        end
+        print("new scale: " .. tostring(value))
+        rawset(self, key, value)
+        self.onScaleChanged:Invoke(self)
+    elseif key == "position" then
+        if not TypeOf(value, Vector2) then
+            LogManager.LogError("Transform.positionにはVector2型の値を設定してください")
             return
         end
+        rawset(self, key, value)
+        self.onPositionChanged:Invoke(self)
+    elseif key == "rotation" then
+        if type(value) ~= "number" then
+            LogManager.LogError("Transform.rotationにはnumber型の値を設定してください")
+            return
+        end
+        rawset(self, key, value)
+        self.onRotationChanged:Invoke(self)
+    else
+        rawset(self, key, value)
     end
-    rawset(self, key, value)
 end
+
 
 return Transform

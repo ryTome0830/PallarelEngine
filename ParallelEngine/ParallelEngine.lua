@@ -1,13 +1,15 @@
 ParallelEngine = {}
 
-require("Core.Utils")
+require("Core.Utils.Utils")
 
 ParallelEngine.Abstracts = require("Core.Abstracts")
 ParallelEngine.Components = require("Core.Components")
+ParallelEngine.Utils = require("Core.Utils")
 ParallelEngine.Objects = require("Core.Objects")
 
 ParallelEngine.GameObject = require("Core.GameObject")
 ParallelEngine.LogManager = require("Core.LogManager")
+ParallelEngine.Physics = require("Core.Physics")
 ParallelEngine.Scene = require("Core.Scene")
 ParallelEngine.SceneManager = require("Core.SceneManager")
 ParallelEngine.Transform = require("Core.Transform")

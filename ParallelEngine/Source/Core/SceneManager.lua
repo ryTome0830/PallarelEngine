@@ -2,12 +2,10 @@
 local TypeRegistry = require("Core.TypeRegistry")
 --- @class Physics
 local Physics = require("Core.Physics")
---- @class Scene
-local Scene = require("Core.Scene")
---- @class GameObject
-local GameObject = require("Core.GameObject")
 --- @class Vector2
 local Vector2 = require("Core.Vector2")
+--- @class TimerManager
+local TimerManager = require("Core.Utils.TimerManager").New()
 
 --- @class SceneManager
 local SceneManager = {}
@@ -34,11 +32,14 @@ function SceneManager:Init()
     --- @type Scene
     self.currentScene = nil
     --- @type number
-    self.updateInterval = 0.02
+    self.updateInterval = 0.01
 end
 
 --- @param sceneTable SceneDefinition
 function SceneManager:LoadScene(sceneTable)
+    --- @class Scene
+    local Scene = require("Core.Scene")
+
     local randomSeed
     if sceneTable.saveRandomeSeed then
         randomSeed = sceneTable.randomSeed
@@ -52,16 +53,22 @@ end
 function SceneManager:UnLoadScene()
     self.currentScene:Destroy()
     self.currentScene = nil
+    TimerManager:StopAll()
 end
 
 
 local accumulatedTime = 0
 function SceneManager:UpdateScene(dt)
     accumulatedTime = accumulatedTime + dt
-    if accumulatedTime >= self.updateInterval then
-        Physics.Update(accumulatedTime)
-        self.currentScene:Update(accumulatedTime)
-        accumulatedTime = 0
+    if accumulatedTime > 0.2 then
+        accumulatedTime = 0.2
+    end
+
+    while accumulatedTime >= self.updateInterval do
+        Physics.Update(self.updateInterval)
+        self.currentScene:Update(self.updateInterval)
+        accumulatedTime = accumulatedTime - self.updateInterval
+        TimerManager:Update(self.updateInterval)
     end
 end
 
@@ -72,7 +79,9 @@ end
 
 --- @param sceneTable SceneDefinition
 function SceneManager:ParseSecne(sceneTable)
-    for _, goDef in ipairs(sceneTable.gameObjects) do
+    --- @class GameObject
+    local GameObject = require("Core.GameObject")
+    for _, goDef in ipairs(sceneTable.gameObjects) do 
         local newGO = GameObject.New(
             goDef.name,
             Vector2.New(goDef.properties.transform.position.x, goDef.properties.transform.position.y),
@@ -86,10 +95,11 @@ function SceneManager:ParseSecne(sceneTable)
                 local componentClass = TypeRegistry.Get(compDef.componentType)
                 if componentClass then
                     newGO:AddComponent(componentClass, compDef.properties)
+                else
+                    error("<- " .. goDef.name)
                 end
             end
         end
-        self.currentScene:AddGameObject(newGO)
     end
 end
 
@@ -100,7 +110,8 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
     if not TypeOf(self.currentScene.name, "string") then return end
 
     --- @type file*|nil
-    local f = CheckExistanceFile(dirPath, self.currentScene.name)
+    local f = io.open(dirPath .. ".lua", "w")
+    -- local f = CheckExistanceFile(dirPath, self.currentScene.name)
     if not f then return end
 
     --- @type SceneDefinition
@@ -111,11 +122,9 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
         gameObjects = {}
     }
 
-    -- 優先順位を管理するマップを作成 (GameManagerを最優先とする)
     local priorityMap = { ["GameManager"] = 0 }
     if prioritiseGameObjects then
         for i, name in ipairs(prioritiseGameObjects) do
-            -- GameManagerより後の優先度を割り当てる
             priorityMap[name] = i
         end
     end
@@ -125,7 +134,6 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
     --- @type GameObject[]
     local othersList = {}
 
-    -- Step 1: 1回のループでオブジェクトを優先リストと通常リストに振り分ける (O(N))
     for _, go in ipairs(self.currentScene.gameObjects) do
         if priorityMap[go.name] ~= nil then
             table.insert(prioritizedList, go)
@@ -134,19 +142,14 @@ function SceneManager:DumpScene(dirPath, prioritiseGameObjects)
         end
     end
 
-    -- Step 2: 優先リスト内をpriorityMapに基づいてソートする (O(P log P))
-    -- PはprioritizedListの要素数
     table.sort(prioritizedList, function(a, b)
         return priorityMap[a.name] < priorityMap[b.name]
     end)
 
-    -- Step 3: 優先リストと通常リストを結合する (O(N))
-    -- まず優先リストの要素を追加
     for _, go in ipairs(prioritizedList) do
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
     end
-    -- 次に通常リストの要素を追加
     for _, go in ipairs(othersList) do
         local goData = go:Dump()
         table.insert(sceneData.gameObjects, goData)
@@ -161,6 +164,14 @@ function SceneManager:SerializeScene()
 end
 
 function SceneManager:Deserialize()
+end
+
+function SceneManager:AddGameObject(go)
+    if self.currentScene then
+        self.currentScene:AddGameObject(go)
+    else
+        error("No current scene loaded")
+    end
 end
 
 

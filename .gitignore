@@ -3,6 +3,7 @@
 
 /Game/Img
 
+editor.lua
 conf.lua
 main.lua
 Scenes/

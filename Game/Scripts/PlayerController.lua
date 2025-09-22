@@ -11,7 +11,7 @@ PlayerController.__index = PlayerController
 PlayerController.__name = "PlayerController"
 
 -- 保存したいプロパティを宣言
-PlayerController.Serializable = {"_enabled", "speed", "jumpHeight"}
+PlayerController.Serializable = {"_enabled", "speedScale"}
 
 function PlayerController.New(gameObjec, props)
     --- @class PlayerController
@@ -19,18 +19,25 @@ function PlayerController.New(gameObjec, props)
     instance:Init(gameObjec, props)
     return instance
 end
+
 --- @param gameObject GameObject
 function PlayerController:Init(gameObject, props)
     self.super:Init()
     self.gameObject = gameObject
 
     self._enabled = props.enabled or true
-    self.speed = props.speed or 5.0
-    self.jumpHeight = props.jumpHeight or 1.0
-    self.internalState = "running"
 
-    self.ySpeedScale = math.random(-10, 10)
-    self.xSpeedScale = math.random(-10, 10)
+    self.playerId = props.playerId or 1
+    self.speedScale = props.speedScale or 50
+    self.velocityY = 0
+
+    self.points = 0
+
+    self.ballRb = nil
+
+    self.shrinkFactor = 0.9
+    self.minHeight = 80
+    self.collisionNumber = 0
 end
 
 function PlayerController:Awake()
@@ -48,44 +55,87 @@ function PlayerController:Awake()
         return
     end
 
-    self.co.OnCollisionEnter = function(other)
-        other.gameObject.name = other.gameObject.name or "不明"
-        local rb = other.gameObject and other.gameObject:GetComponent(ParallelEngine.Components.RigidBody)
-        if rb and rb.body then
-            local fx = math.random(-100, 100)
-            local fy = math.random(-100, 100)
-            rb:ApplyForce(fx, fy)
+    self.co.OnCollisionEnter = function(owner, other)
+        if not self.ballRb then self.ballRb = other.gameObject and other.gameObject:GetComponent(ParallelEngine.Components.RigidBody) end
+        if other.gameObject.name == "Ball" and self.ballRb then
+            -- 1. 衝突点を計算 (-1.0 から 1.0)
+            local playerY = self.gameObject.transform.position.y
+            local ballY = other.gameObject.transform.position.y
+            local playerHeight = self.gameObject.transform.scale.y
+            local relativeImpactY = (playerY - ballY) / (playerHeight / 2)
+            -- 値を -1 と 1 の間に固定する
+            relativeImpactY = math.max(-1, math.min(1, relativeImpactY))
+
+            -- 2. 衝突点から反射角度を計算 (-45度から45度へマッピング)
+            local bounceAngle = relativeImpactY * (math.pi / 4) -- pi/4 は45度
+
+            -- 3. プレイヤーの位置に応じてボールの水平方向を決める
+            local directionX = 1
+            if self.gameObject.transform.position.x > other.gameObject.transform.position.x then
+                -- プレイヤーが右側にいる場合、ボールは左へ飛ぶ
+                directionX = -1
+            end
+
+            -- 4. 新しい速度ベクトルを計算
+            local ballSpeed = self.ballRb:GetVelocity() * self.co.restitution
+            local vx = ballSpeed * math.cos(bounceAngle) * directionX
+            local vy = ballSpeed * math.sin(bounceAngle) * -1
+
+            -- 5. ボールに新しい速度を適用
+            self.ballRb:SetVelocity(vx, vy)
+            LogManager.AddDebugInfo("BallVelocity", string.format("Vx: %.2f, Vy: %.2f", vx, vy))
+
+            -- サイズ変更
+            self.collisionNumber = self.collisionNumber + 1
+            -- 3回に1回サイズを縮小
+            if self.collisionNumber % 3 == 0 then
+                print("Player " .. self.playerId .. " paddle shrinks!")
+
+                local t = self.gameObject.transform
+                local currentScale = t.scale
+                t:SetScale(ParallelEngine.Vector2.New(currentScale.x, currentScale.y * self.shrinkFactor))
+                self.rb = nil
+            end
         end
     end
-
 end
 
 function PlayerController:Update(dt)
-    if not self.rb then return end
+    if not self.rb then self.rb = self.gameObject:GetComponent(ParallelEngine.Components.RigidBody) return end
+    local velocityY = 0
 
-    local velocityX, velocityY = self.rb.body:getLinearVelocity()
-    local moveSpeed = 1
-
-    if love.keyboard.isDown("d") then
-        velocityX = velocityX + moveSpeed
-    elseif love.keyboard.isDown("a") then
-        velocityX = velocityX - moveSpeed
-    elseif love.keyboard.isDown("w") then
-        velocityY = velocityY - moveSpeed
+    if love.keyboard.isDown("w") then
+        if self.gameObject.transform.position.y - self.gameObject.transform.scale.y / 2 <= 0 then
+            velocityY = 0
+        else
+            velocityY = -self.speedScale
+        end
     elseif love.keyboard.isDown("s") then
-        velocityY = velocityY + moveSpeed
-    elseif love.keyboard.isDown("space") then
-        velocityY = velocityY -self.jumpHeight * 3
-    else
-        velocityX = 0
-        velocityY = 0
+        if self.gameObject.transform.position.y + self.gameObject.transform.scale.y / 2 >= love.graphics.getHeight() then
+            velocityY = 0
+        else
+            velocityY = self.speedScale
+        end
     end
 
-    self.rb:SetVelocity(velocityX, velocityY)
+    self.rb:SetVelocity(0, velocityY)
+end
+
+function PlayerController:AddPoint()
+    self.points = self.points + 1
+    -- >> DEV
+    print("Player " .. self.playerId .. " scored! Total points: " .. self.points)
+end
+
+--- @param paddleSize {x:integer, y:integer}
+function PlayerController:Reset(paddleSize)
+    if paddleSize then
+        self.gameObject.transform:SetScale(ParallelEngine.Vector2.New(paddleSize.x, paddleSize.y))
+    end
 end
 
 function PlayerController:__tostring()
-    return string.format("enabled: %s, speed: %s, jumpHeight: %s", self._enabled, self.speed, self.jumpHeight)
+    return "PlayerController"
 end
 
 return PlayerController

@@ -70,6 +70,28 @@ function Scene:AddGameObject(gameObject)
     table.insert(self.gameObjects, gameObject)
 end
 
+--- @param name string
+--- @return GameObject|nil
+function Scene:FindGameObjectByName(name)
+    for _, go in ipairs(self.gameObjects) do
+        if go.name == name then
+            return go
+        end
+    end
+    return nil
+end
+
+--- @param uuid string
+--- @return GameObject|nil
+function Scene:FindGameObjectByUUID(uuid)
+    for _, go in ipairs(self.gameObjects) do
+        if go.uuid == uuid then
+            return go
+        end
+    end
+    return nil
+end
+
 --- @private
 function Scene:Awake()
 
