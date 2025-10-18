@@ -11,11 +11,18 @@ function TypeOf(value, kclass)
         return false
     end
 
+    -- compare metatable chain: allow subclass detection
     local mt = getmetatable(value)
-    if mt and mt.__name == kclass.__name then
-        return true
+    while mt do
+        if mt == kclass then
+            return true
+        end
+        -- also support comparison by __name if exact table reference isn't available
+        if mt.__name and kclass.__name and mt.__name == kclass.__name then
+            return true
+        end
+        mt = getmetatable(mt)
     end
-
     return false
 end
 

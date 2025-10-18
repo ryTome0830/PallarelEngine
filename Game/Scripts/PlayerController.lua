@@ -104,17 +104,33 @@ function PlayerController:Update(dt)
     if not self.rb then self.rb = self.gameObject:GetComponent(ParallelEngine.Components.RigidBody) return end
     local velocityY = 0
 
-    if love.keyboard.isDown("w") then
-        if self.gameObject.transform.position.y - self.gameObject.transform.scale.y / 2 <= 0 then
-            velocityY = 0
-        else
-            velocityY = -self.speedScale
+    if (self.playerId == 1) then
+        if love.keyboard.isDown("w") then
+            if self.gameObject.transform.position.y - self.gameObject.transform.scale.y / 2 <= 0 then
+                velocityY = 0
+            else
+                velocityY = -self.speedScale
+            end
+        elseif love.keyboard.isDown("s") then
+            if self.gameObject.transform.position.y + self.gameObject.transform.scale.y / 2 >= love.graphics.getHeight() then
+                velocityY = 0
+            else
+                velocityY = self.speedScale
+            end
         end
-    elseif love.keyboard.isDown("s") then
-        if self.gameObject.transform.position.y + self.gameObject.transform.scale.y / 2 >= love.graphics.getHeight() then
-            velocityY = 0
-        else
-            velocityY = self.speedScale
+    else
+        if love.keyboard.isDown("up") then
+            if self.gameObject.transform.position.y - self.gameObject.transform.scale.y / 2 <= 0 then
+                velocityY = 0
+            else
+                velocityY = -self.speedScale
+            end
+        elseif love.keyboard.isDown("down") then
+            if self.gameObject.transform.position.y + self.gameObject.transform.scale.y / 2 >= love.graphics.getHeight() then
+                velocityY = 0
+            else
+                velocityY = self.speedScale
+            end
         end
     end
 

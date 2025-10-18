@@ -41,10 +41,12 @@ function BallController:Awake()
 
     self.co.OnCollisionEnter = function(owner, other)
         local otherName = other.gameObject.name
+        -- If the ball hits the left wall, the left side lost -> right player (player 2) gains a point.
         if otherName == "WallLeft" then
-            self.onEnterEvent(1)
-        elseif otherName == "WallRight" then
             self.onEnterEvent(2)
+        -- If the ball hits the right wall, the right side lost -> left player (player 1) gains a point.
+        elseif otherName == "WallRight" then
+            self.onEnterEvent(1)
         else
             local vx, vy = self.rb.body:getLinearVelocity()
             if otherName == "WallUp" and vy < 0 then

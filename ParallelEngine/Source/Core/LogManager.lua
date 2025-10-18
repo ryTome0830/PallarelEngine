@@ -27,7 +27,7 @@ end
 
 local MAX_LOGS = 20
 LogManager.logs = {}
-LogManager.consoleEnabled = true
+LogManager.consoleEnabled = false
 LogManager.debugInfo = {}
 
 --- @param message string

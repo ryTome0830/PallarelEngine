@@ -11,6 +11,7 @@ local LogManager = require("Core.LogManager")
 --- @class SceneManager
 local SceneManager = require("Core.SceneManager")
 
+-- こいつら密結合...
 --- @class RigidBody
 local RigidBody = require("Core.Components.RigidBody")
 --- @class Collision

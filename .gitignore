@@ -1,8 +1,12 @@
 .vscode/
 .luarc.json
 
-/Game/Img
+Game/Img/*
+dist/
+dist/*
 
+*ps1
+*.love
 editor.lua
 conf.lua
 main.lua

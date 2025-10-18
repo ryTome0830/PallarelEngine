@@ -172,7 +172,6 @@ function Transform:__newindex(key, value)
             LogManager.LogWarning("Transformのscaleに0が設定されようとしたため(0.1, 0.1)に自動補正しました")
             value = Vector2.New(0.1, 0.1)
         end
-        print("new scale: " .. tostring(value))
         rawset(self, key, value)
         self.onScaleChanged:Invoke(self)
     elseif key == "position" then

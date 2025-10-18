@@ -111,6 +111,57 @@ function GameManager:Awake()
     self.ball:AddComponent(SpriteRenderer, {})
     ballController = self.ball:AddComponent(BallController, {maxSpeed = 150, event = function (playerID) self:OnBallEvent(playerID) end})
 
+    -- HUD
+    local uiMgr = ParallelEngine.UIManager.New()
+    local hud = uiMgr:NewCanvas("GameHUD", { worldSpace = false, pivot = "topleft", debugHits = false })
+    self.hud = hud
+    self.hudLabels = {}
+
+    local lblLeftGO = GameObject.New("HUD_Player1_Label")
+    local defaultFont = love.graphics.newFont(20)
+    local lblLeft = lblLeftGO:AddComponent(ParallelEngine.UI.Label, { x = 20, y = 20, text = tostring(self.playersPoints[1] or 0), font = defaultFont })
+    if hud then
+        hud:AddGameObject(lblLeftGO)
+        table.insert(self.hudLabels, lblLeft)
+    end
+
+    local lblRightGO = GameObject.New("HUD_Player2_Label")
+    local lblRight = lblRightGO:AddComponent(ParallelEngine.UI.Label, { x = w - 80, y = 20, text = tostring(self.playersPoints[2] or 0), font = defaultFont })
+    if hud then
+        hud:AddGameObject(lblRightGO)
+        table.insert(self.hudLabels, lblRight)
+    end
+
+    self.countdownLabel = nil
+    self.roundLabel = nil
+    self.winnerLabel = nil
+    if hud then
+    local cdGO = GameObject.New("HUD_Countdown_Label")
+    local bigFont = love.graphics.newFont(64)
+
+    self.countdownLabel = cdGO:AddComponent(ParallelEngine.UI.Label, { x = w/2 - 20, y = h/2 - 80, text = "", font = bigFont })
+    self.countdownLabel.visible = false
+        hud:AddGameObject(cdGO)
+
+        local ptsGO = GameObject.New("HUD_PressToStart_Label")
+        local ptsFont = love.graphics.newFont(20)
+        self.pressToStartLabel = ptsGO:AddComponent(ParallelEngine.UI.Label, { x = w/2 - 120, y = h - 60, text = "Press SPACE to Start", font = ptsFont })
+        hud:AddGameObject(ptsGO)
+
+        local roundGO = GameObject.New("HUD_Round_Label")
+    local roundFont = love.graphics.newFont(28)
+    self.roundLabel = roundGO:AddComponent(ParallelEngine.UI.Label, { x = w/2 - 30, y = 10, text = "Round 0", font = roundFont })
+        hud:AddGameObject(roundGO)
+
+        local winGO = GameObject.New("HUD_Winner_Label")
+        local winnerFont = love.graphics.newFont(36)
+        self.winnerLabel = winGO:AddComponent(ParallelEngine.UI.Label, { x = w/2 - 60, y = h/2 - 20, text = "", font = winnerFont })
+        hud:AddGameObject(winGO)
+    end
+
+    self.lastCountdown = nil
+    self.round = 0
+
     -- print("GameManager Awaked")
 end
 
@@ -120,12 +171,86 @@ function GameManager:Start()
 end
 
 function GameManager:Update(dt)
-    if not canStart then return end
-    -- ゲームが始まっていない時だけスペースキーの入力を待つ
-    if not gameStarted then
-        if love.keyboard.isDown("space") then
-            self:StartGame()
+    -- NOTE: always run HUD sync (countdown, press-to-start, winner) even if canStart is false.
+    -- Only gate input-driven start logic behind canStart.
+    -- ゲーム開始入力は canStart が true の時のみ有効
+    if canStart then
+        if not gameStarted then
+            if love.keyboard.isDown("space") then
+                self:StartGame()
+            end
         end
+    end
+
+    local cd = ParallelEngine.LogManager.debugInfo["Countdown"]
+    if cd ~= self.lastCountdown then
+        self.lastCountdown = cd
+        if self.countdownLabel then
+            self.countdownLabel.text = cd or ""
+            if self.countdownLabel.text == "" then
+                self.countdownLabel.visible = false
+            else
+                self.countdownLabel.visible = true
+            end
+            local sw, sh = love.graphics.getDimensions()
+            if self.countdownLabel.text ~= "" and self.countdownLabel.font then
+                local tw = self.countdownLabel.font:getWidth(self.countdownLabel.text)
+                local th = self.countdownLabel.font:getHeight()
+                self.countdownLabel.x = (sw / 2) - (tw / 2)
+                self.countdownLabel.y = (sh / 2) - (th / 2)
+            else
+                self.countdownLabel.x = sw + 1000
+            end
+        end
+    end
+
+    -- PressToStart は現在のカウントダウン値で判定（cd を直接使用）
+    if self.pressToStartLabel then
+        if cd and cd ~= "" then
+            self.pressToStartLabel.visible = false
+        else
+            self.pressToStartLabel.visible = true
+        end
+    end
+
+    -- Winner 表示を LogManager.debugInfo から同期する
+    local winner = ParallelEngine.LogManager.debugInfo["Winner"]
+    if self.winnerLabel then
+        if winner and winner ~= "" then
+            self.winnerLabel.text = winner
+            self.winnerLabel.visible = true
+        else
+            -- 隠す（勝者情報が nil / 空文字のとき）
+            self.winnerLabel.visible = false
+        end
+    end
+
+    local sw, sh = love.graphics.getDimensions()
+    if self.hudLabels and #self.hudLabels >= 2 then
+        local left = self.hudLabels[1]
+        local right = self.hudLabels[2]
+        if left then
+            left.x = 20
+            left.y = 10
+        end
+        if right then
+            right.y = 10
+            if right.font then
+                right.x = sw - 20 - right.font:getWidth(right.text or "")
+            else
+                right.x = sw - 80
+            end
+        end
+    end
+    if self.roundLabel and self.roundLabel.font then
+        local rw = self.roundLabel.font:getWidth(self.roundLabel.text or "")
+        self.roundLabel.x = (sw / 2) - (rw / 2)
+        self.roundLabel.y = 10
+    end
+    if self.winnerLabel and self.winnerLabel.font then
+        local ww = self.winnerLabel.font:getWidth(self.winnerLabel.text or "")
+        self.winnerLabel.x = (sw / 2) - (ww / 2)
+        self.winnerLabel.y = (sh / 2) - (self.winnerLabel.font:getHeight() / 2)
     end
 end
 
@@ -149,6 +274,10 @@ function GameManager:OnBallEvent(playerId)
         end
     end
 
+    if self.hudLabels and self.hudLabels[playerId] then
+        self.hudLabels[playerId].text = tostring(self.players[playerId]:GetComponent(PlayerController).points)
+    end
+
     TimerManager:After(1.0, function()
         self:StartGame()
     end)
@@ -158,6 +287,11 @@ end
 function GameManager:StartGame()
     if not ballController then return end
     gameStarted = true
+
+    self.round = (self.round or 0) + 1
+    if self.roundLabel then
+        self.roundLabel.text = "Round " .. tostring(self.round)
+    end
 
     for _, player in pairs(self.players) do
         local pc = player:GetComponent(PlayerController)
