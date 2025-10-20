@@ -109,6 +109,8 @@ function GameManager:Awake()
     self.ball:AddComponent(RigidBody, {mass=1.0, bodyType="dynamic"})
     self.ball:AddComponent(Collision, {shapeType="circle", radius=8})
     self.ball:AddComponent(SpriteRenderer, {})
+    -- Add single AudioSource on the ball to play collision sounds (resource saving)
+    self.ball:AddComponent(ParallelEngine.Components.AudioSource, { audioClip = "Game/Audio/collision.mp3", loop = false, volume = 1.0 })
     ballController = self.ball:AddComponent(BallController, {maxSpeed = 150, event = function (playerID) self:OnBallEvent(playerID) end})
 
     -- HUD

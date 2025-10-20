@@ -39,7 +39,33 @@ function BallController:Awake()
         error("BallController: Collision component not found on ball")
     end
 
+    --- @type AudioSource|nil
+    -- Try to get existing AudioSource (added in GameManager). If not present, add one.
+    self.ac = self.gameObject:GetComponent(ParallelEngine.Components.AudioSource)
+    if not self.ac then
+        self.ac = self.gameObject:AddComponent(ParallelEngine.Components.AudioSource, {audioClip = "/Game/Audio/collision.mp3", loop = false, volume = 1.0})
+        if not self.ac then
+            error("BallController: AudioSource component could not be added to ball")
+        end
+    end
+
     self.co.OnCollisionEnter = function(owner, other)
+            -- Play collision sound using the ball's AudioSource only (resource saving)
+            local audioComp = self.ac
+            if audioComp then
+                -- compute approximate impact strength from velocity magnitude
+                local vx, vy = 0, 0
+                if self.rb and self.rb.body then
+                    vx, vy = self.rb.body:getLinearVelocity()
+                end
+                local speed = math.sqrt((vx or 0) ^ 2 + (vy or 0) ^ 2)
+                -- Map speed to volume (tweak these values as needed)
+                local maxExpectedSpeed = self.maxSpeed or 200
+                local volume = math.min(1.0, math.max(0.05, speed / maxExpectedSpeed))
+                pcall(function() audioComp:SetVolume(volume) end)
+                pcall(function() audioComp:Play() end)
+            end
+
         local otherName = other.gameObject.name
         -- If the ball hits the left wall, the left side lost -> right player (player 2) gains a point.
         if otherName == "WallLeft" then

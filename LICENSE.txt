@@ -1,3 +1,5 @@
+MIT License
+
 PallarelEngine
 
 Copyright 2025 ryTome0830

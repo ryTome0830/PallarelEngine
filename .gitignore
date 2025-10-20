@@ -1,10 +1,14 @@
+# VScode
 .vscode/
 .luarc.json
 
+# Game Source
 Game/Img/*
+Game/Audio/*
 dist/
 dist/*
 
+# Love2d
 *ps1
 *.love
 editor.lua
